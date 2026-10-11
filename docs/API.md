@@ -39,8 +39,7 @@ There is no authentication anywhere yet.
 
   ```ts
   type SubmitQuizResult =
-    | { ok: true; result: QuizResult }
-    | { ok: false; error: string };
+    { ok: true; result: QuizResult } | { ok: false; error: string };
 
   type QuizResult = {
     score: number;
@@ -69,12 +68,12 @@ There is no authentication anywhere yet.
   React's `useActionState`: `(previousState, formData) => ContactFormState`.
 - **Validation** (`lib/validations/contact.ts`), after trimming:
 
-  | Field | Rule |
-  |---|---|
-  | `name` | 2 to 80 characters |
-  | `email` | valid email, at most 254 characters |
-  | `subject` | 3 to 120 characters |
-  | `message` | 10 to 2000 characters |
+  | Field     | Rule                                |
+  | --------- | ----------------------------------- |
+  | `name`    | 2 to 80 characters                  |
+  | `email`   | valid email, at most 254 characters |
+  | `subject` | 3 to 120 characters                 |
+  | `message` | 10 to 2000 characters               |
 
 - **Result**:
 
@@ -82,9 +81,9 @@ There is no authentication anywhere yet.
   type ContactFormState =
     | { status: "idle" }
     | { status: "invalid"; fieldErrors: Partial<Record<ContactField, string>> }
-    | { status: "stored" }  // row inserted into contact_submissions
-    | { status: "demo" }    // DATABASE_URL not set: nothing stored, nothing sent
-    | { status: "error" };  // insert failed; details logged on the server only
+    | { status: "stored" } // row inserted into contact_submissions
+    | { status: "demo" } // DATABASE_URL not set: nothing stored, nothing sent
+    | { status: "error" }; // insert failed; details logged on the server only
   ```
 
 - **Authentication**: none.
@@ -102,13 +101,13 @@ Planned error envelope for all Route Handlers:
 { "error": { "code": "not_found", "message": "Quiz not found" } }
 ```
 
-| Method and path | Purpose | Phase |
-|---|---|---|
-| `GET /api/quizzes` | List published quizzes | 2 |
-| `GET /api/quizzes/[slug]` | One published quiz with questions and options, without answer keys | 2 |
-| `POST /api/quizzes/[slug]/attempts` | Submit answers, receive a scored result | 3 |
-| `GET /api/attempts/[id]` | Read a stored result | 3 |
-| `POST /api/contact` | Submit a contact message as JSON | when needed |
+| Method and path                     | Purpose                                                            | Phase       |
+| ----------------------------------- | ------------------------------------------------------------------ | ----------- |
+| `GET /api/quizzes`                  | List published quizzes                                             | 2           |
+| `GET /api/quizzes/[slug]`           | One published quiz with questions and options, without answer keys | 2           |
+| `POST /api/quizzes/[slug]/attempts` | Submit answers, receive a scored result                            | 3           |
+| `GET /api/attempts/[id]`            | Read a stored result                                               | 3           |
+| `POST /api/contact`                 | Submit a contact message as JSON                                   | when needed |
 
 ### `GET /api/quizzes` (planned)
 

@@ -23,12 +23,12 @@ Use a separate Neon branch (or project) for production and for development.
 
 ## Drizzle setup
 
-| File | Purpose |
-|---|---|
-| `lib/db/schema.ts` | Table and enum definitions. Source of truth. |
-| `lib/db/index.ts` | `getDb()`: lazy Drizzle client over the Neon HTTP driver. Returns `null` without `DATABASE_URL`. Server-only. |
-| `drizzle.config.ts` | `drizzle-kit` configuration. Loads `.env.local` with `process.loadEnvFile`. |
-| `drizzle/` | Generated SQL migrations and snapshots. Committed. |
+| File                | Purpose                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`  | Table and enum definitions. Source of truth.                                                                  |
+| `lib/db/index.ts`   | `getDb()`: lazy Drizzle client over the Neon HTTP driver. Returns `null` without `DATABASE_URL`. Server-only. |
+| `drizzle.config.ts` | `drizzle-kit` configuration. Loads `.env.local` with `process.loadEnvFile`.                                   |
+| `drizzle/`          | Generated SQL migrations and snapshots. Committed.                                                            |
 
 Usage on the server:
 
@@ -45,8 +45,8 @@ const rows = await db.select().from(quizzes);
 
 ## Environment variables
 
-| Variable | Required | Notes |
-|---|---|---|
+| Variable       | Required                                                  | Notes                                                                    |
+| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
 | `DATABASE_URL` | Only for database features and `db:migrate` / `db:studio` | Neon connection string. Never commit it. `db:generate` does not need it. |
 
 ## Entities
@@ -116,22 +116,22 @@ schema file.
 
 ## Implemented and planned tables
 
-| Table | State | Used by application code |
-|---|---|---|
-| `quizzes` | Implemented in schema and migration | No (Phase 2) |
-| `questions` | Implemented in schema and migration | No (Phase 2) |
-| `answer_options` | Implemented in schema and migration | No (Phase 2) |
+| Table                 | State                               | Used by application code                        |
+| --------------------- | ----------------------------------- | ----------------------------------------------- |
+| `quizzes`             | Implemented in schema and migration | No (Phase 2)                                    |
+| `questions`           | Implemented in schema and migration | No (Phase 2)                                    |
+| `answer_options`      | Implemented in schema and migration | No (Phase 2)                                    |
 | `contact_submissions` | Implemented in schema and migration | Yes, `submitContact` when `DATABASE_URL` is set |
-| `users` | Planned | — |
-| `quiz_attempts` | Planned | — |
+| `users`               | Planned                             | —                                               |
+| `quiz_attempts`       | Planned                             | —                                               |
 
 ### Enums
 
-| Enum | Values |
-|---|---|
-| `quiz_difficulty` | `beginner`, `intermediate`, `advanced` |
-| `quiz_status` | `draft`, `published`, `archived` |
-| `question_type` | `single_choice`, `multiple_choice`, `true_false` |
+| Enum              | Values                                           |
+| ----------------- | ------------------------------------------------ |
+| `quiz_difficulty` | `beginner`, `intermediate`, `advanced`           |
+| `quiz_status`     | `draft`, `published`, `archived`                 |
+| `question_type`   | `single_choice`, `multiple_choice`, `true_false` |
 
 Only `single_choice` is supported by the demo scoring code.
 

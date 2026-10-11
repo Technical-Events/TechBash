@@ -26,13 +26,13 @@ demo mode and only contact persistence is unavailable.
 
 ## Responsibilities
 
-| Layer | Does | Does not |
-|---|---|---|
-| Server Components (`app/**/page.tsx`, `components/**` without `"use client"`) | Render pages, read server-side data, pass plain props to client components | Hold UI state |
-| Client Components (`"use client"`) | Local interaction: menu toggle, quiz answer state, form state | Import `lib/db`, read secrets, decide scores |
-| Server Actions (`app/**/actions.ts`) | Validate input with Zod, run business logic, write to the database | Trust client-computed values |
-| Route Handlers (`app/api/**/route.ts`) | HTTP endpoints for non-UI clients | Duplicate what a Server Action already does for our own UI |
-| `lib/` | Framework-free logic: schemas, scoring, database access | Import React |
+| Layer                                                                         | Does                                                                       | Does not                                                   |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Server Components (`app/**/page.tsx`, `components/**` without `"use client"`) | Render pages, read server-side data, pass plain props to client components | Hold UI state                                              |
+| Client Components (`"use client"`)                                            | Local interaction: menu toggle, quiz answer state, form state              | Import `lib/db`, read secrets, decide scores               |
+| Server Actions (`app/**/actions.ts`)                                          | Validate input with Zod, run business logic, write to the database         | Trust client-computed values                               |
+| Route Handlers (`app/api/**/route.ts`)                                        | HTTP endpoints for non-UI clients                                          | Duplicate what a Server Action already does for our own UI |
+| `lib/`                                                                        | Framework-free logic: schemas, scoring, database access                    | Import React                                               |
 
 ## App Router structure
 
@@ -53,14 +53,27 @@ app/
 `/test/demo` is a static segment so that a future dynamic route `/test/[slug]` can sit
 next to it.
 
+## Rendering and caching
+
+`next.config.ts` enables Cache Components and Partial Prefetching (the Next.js 16
+generator defaults). Consequences for this codebase:
+
+- All five pages have no request-time data, so the build prerenders them as static.
+- A Server Component that reads request data, the database, the clock or random values
+  must sit behind `<Suspense>` or use `"use cache"`. The build fails otherwise.
+- `GET /api/health` calls `connection()` first so its timestamp is produced per request.
+- Do not add `export const dynamic = ...` route config; use the Cache Components model.
+- `LayoutProps`, `PageProps` and `RouteContext` are generated types. `pnpm typecheck`
+  runs `next typegen` before `tsc` for that reason.
+
 ## Server and client boundaries
 
 Client Components in the scaffold, and why each one needs the browser:
 
-| Component | Reason |
-|---|---|
-| `components/layout/nav-links.tsx` | Mobile menu open state, active link from `usePathname()` |
-| `components/quiz/quiz-runner.tsx` | Selected answers, current question, pending submit |
+| Component                             | Reason                                                    |
+| ------------------------------------- | --------------------------------------------------------- |
+| `components/layout/nav-links.tsx`     | Mobile menu open state, active link from `usePathname()`  |
+| `components/quiz/quiz-runner.tsx`     | Selected answers, current question, pending submit        |
 | `components/contact/contact-form.tsx` | Field errors, pending and result state (`useActionState`) |
 
 Everything else is a Server Component. Rules:
@@ -138,8 +151,8 @@ sequenceDiagram
 
 ## Environment configuration
 
-| Variable | Required | Used by |
-|---|---|---|
+| Variable       | Required                  | Used by                                |
+| -------------- | ------------------------- | -------------------------------------- |
 | `DATABASE_URL` | No (demo mode without it) | `lib/db/index.ts`, `drizzle.config.ts` |
 
 Local values go in `.env.local`, which is ignored by Git. `.env.example` lists the
@@ -160,14 +173,14 @@ environment is exposed to the browser.
 
 The demo was built in the shape of the real system so that only the data source changes.
 
-| Concern | Demo (now) | Database-backed (Phase 2 and 3) |
-|---|---|---|
-| Quiz source | `lib/quiz/demo-quiz.ts` | `quizzes`, `questions`, `answer_options` through Drizzle |
-| Catalog on `/test` | `lib/quiz/catalog.ts` placeholders | Query of published quizzes |
-| Route | `/test/demo` | `/test/[slug]` |
-| Public shape | `PublicQuiz` (no answer keys) | Same type, built from rows without `is_correct` |
-| Scoring | `scoreQuiz()` in `lib/quiz/scoring.ts` | Same function, fed from the database |
-| Persistence | None | `quiz_attempts` (planned) |
+| Concern            | Demo (now)                             | Database-backed (Phase 2 and 3)                          |
+| ------------------ | -------------------------------------- | -------------------------------------------------------- |
+| Quiz source        | `lib/quiz/demo-quiz.ts`                | `quizzes`, `questions`, `answer_options` through Drizzle |
+| Catalog on `/test` | `lib/quiz/catalog.ts` placeholders     | Query of published quizzes                               |
+| Route              | `/test/demo`                           | `/test/[slug]`                                           |
+| Public shape       | `PublicQuiz` (no answer keys)          | Same type, built from rows without `is_correct`          |
+| Scoring            | `scoreQuiz()` in `lib/quiz/scoring.ts` | Same function, fed from the database                     |
+| Persistence        | None                                   | `quiz_attempts` (planned)                                |
 
 Steps for the transition:
 

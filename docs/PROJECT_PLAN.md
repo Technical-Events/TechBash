@@ -41,34 +41,34 @@ restructuring.
 
 ## 4. Intentionally excluded
 
-| Excluded | Reason |
-|---|---|
-| User accounts, login, sessions | No requirement yet. No homemade authentication. |
-| `users` and `quiz_attempts` tables | Depend on the account decision. Documented as planned. |
-| Quiz catalog read from the database | Phase 2. The demo uses local data. |
-| REST endpoints for quizzes and contact | Server Actions cover the scaffold. Contracts are documented in `API.md` as planned. |
-| Email delivery for the contact form | No provider or configuration was requested. |
-| Rate limiting and spam protection | Needs infrastructure (or a provider) that is out of scope. Listed as a known limitation. |
-| Leaderboard, dashboard, admin UI, timers | Not in the confirmed scope. |
-| Redis, microservices, a separate backend | Explicitly ruled out. |
-| CI and deployment | Not requested for this pass. |
+| Excluded                                 | Reason                                                                                   |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| User accounts, login, sessions           | No requirement yet. No homemade authentication.                                          |
+| `users` and `quiz_attempts` tables       | Depend on the account decision. Documented as planned.                                   |
+| Quiz catalog read from the database      | Phase 2. The demo uses local data.                                                       |
+| REST endpoints for quizzes and contact   | Server Actions cover the scaffold. Contracts are documented in `API.md` as planned.      |
+| Email delivery for the contact form      | No provider or configuration was requested.                                              |
+| Rate limiting and spam protection        | Needs infrastructure (or a provider) that is out of scope. Listed as a known limitation. |
+| Leaderboard, dashboard, admin UI, timers | Not in the confirmed scope.                                                              |
+| Redis, microservices, a separate backend | Explicitly ruled out.                                                                    |
+| CI and deployment                        | Not requested for this pass.                                                             |
 
 ## 5. Functional requirements
 
-| ID | Requirement |
-|---|---|
-| F1 | The primary navbar shows Home, Test, About, Contact Us and nothing else. |
-| F2 | Home introduces TechBash and links to `/test` (primary) and `/about` (secondary). |
-| F3 | Home shows a preview of the quiz experience and the kinds of quizzes planned. |
-| F4 | Test explains how quizzes work and lists sample categories with difficulty labels. |
-| F5 | Test offers one clearly marked demo quiz that can be started. |
-| F6 | The demo quiz supports answer selection, submission and a results view. |
-| F7 | Correct answers are not sent to the browser before the quiz is submitted. |
-| F8 | About explains what TechBash is, why it exists and its ASCII identity. |
-| F9 | Contact has name, email, subject and message fields with accessible validation errors. |
-| F10 | Contact never reports a message as sent or stored unless it was stored. |
-| F11 | `GET /api/health` returns structured JSON without infrastructure details. |
-| F12 | The application runs without `DATABASE_URL` (demo mode). |
+| ID  | Requirement                                                                            |
+| --- | -------------------------------------------------------------------------------------- |
+| F1  | The primary navbar shows Home, Test, About, Contact Us and nothing else.               |
+| F2  | Home introduces TechBash and links to `/test` (primary) and `/about` (secondary).      |
+| F3  | Home shows a preview of the quiz experience and the kinds of quizzes planned.          |
+| F4  | Test explains how quizzes work and lists sample categories with difficulty labels.     |
+| F5  | Test offers one clearly marked demo quiz that can be started.                          |
+| F6  | The demo quiz supports answer selection, submission and a results view.                |
+| F7  | Correct answers are not sent to the browser before the quiz is submitted.              |
+| F8  | About explains what TechBash is, why it exists and its ASCII identity.                 |
+| F9  | Contact has name, email, subject and message fields with accessible validation errors. |
+| F10 | Contact never reports a message as sent or stored unless it was stored.                |
+| F11 | `GET /api/health` returns structured JSON without infrastructure details.              |
+| F12 | The application runs without `DATABASE_URL` (demo mode).                               |
 
 ## 6. Non-functional requirements
 
@@ -93,15 +93,15 @@ Details are in `DESIGN_SYSTEM.md`.
 
 Summarized here; each has a record in `DECISIONS.md`.
 
-| Decision | Rationale |
-|---|---|
-| Next.js for frontend and backend | One codebase, one deployment, Server Components and Server Actions remove most API plumbing. |
-| Neon PostgreSQL | Serverless Postgres over HTTP fits serverless Next.js hosting; relational data suits quizzes. |
-| Drizzle ORM | Typed schema in TypeScript, SQL migrations in the repository, small runtime. |
-| Tailwind CSS with custom tokens | Tokens in one CSS file; utilities for layout; a few custom ASCII utilities. |
-| No shadcn/ui | Five small components do not justify Radix and helper dependencies. |
-| Server-scored demo quiz | Keeps answer keys off the client and matches the future database flow. |
-| Node built-in test runner | No test dependency for two small pure modules. |
+| Decision                         | Rationale                                                                                     |
+| -------------------------------- | --------------------------------------------------------------------------------------------- |
+| Next.js for frontend and backend | One codebase, one deployment, Server Components and Server Actions remove most API plumbing.  |
+| Neon PostgreSQL                  | Serverless Postgres over HTTP fits serverless Next.js hosting; relational data suits quizzes. |
+| Drizzle ORM                      | Typed schema in TypeScript, SQL migrations in the repository, small runtime.                  |
+| Tailwind CSS with custom tokens  | Tokens in one CSS file; utilities for layout; a few custom ASCII utilities.                   |
+| No shadcn/ui                     | Five small components do not justify Radix and helper dependencies.                           |
+| Server-scored demo quiz          | Keeps answer keys off the client and matches the future database flow.                        |
+| Node built-in test runner        | No test dependency for two small pure modules.                                                |
 
 ## 9. Initial architecture
 
@@ -122,15 +122,15 @@ Drizzle → Neon. See `ARCHITECTURE.md` for diagrams and boundaries.
 
 ## 11. Milestones and acceptance criteria (Phase 1)
 
-| Milestone | Acceptance criteria |
-|---|---|
-| M1 Documentation | All nine Markdown files exist and describe the real codebase. |
-| M2 Foundation | `pnpm dev` starts; layout, navbar and footer render on every page. |
-| M3 Pages | `/`, `/test`, `/test/demo`, `/about`, `/contact` return 200 and share the design system. |
-| M4 Demo quiz | A user can answer five questions, submit and read a scored review. The page payload holds no answer key. |
-| M5 Contact | Empty submit shows field errors; valid submit shows the demo-mode or stored message that matches reality. |
-| M6 Backend | `/api/health` returns `{ status, service, timestamp }`. Schema compiles and a migration is generated. |
-| M7 Quality | `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. |
+| Milestone        | Acceptance criteria                                                                                       |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| M1 Documentation | All nine Markdown files exist and describe the real codebase.                                             |
+| M2 Foundation    | `pnpm dev` starts; layout, navbar and footer render on every page.                                        |
+| M3 Pages         | `/`, `/test`, `/test/demo`, `/about`, `/contact` return 200 and share the design system.                  |
+| M4 Demo quiz     | A user can answer five questions, submit and read a scored review. The page payload holds no answer key.  |
+| M5 Contact       | Empty submit shows field errors; valid submit shows the demo-mode or stored message that matches reality. |
+| M6 Backend       | `/api/health` returns `{ status, service, timestamp }`. Schema compiles and a migration is generated.     |
+| M7 Quality       | `pnpm typecheck`, `pnpm lint`, `pnpm test` and `pnpm build` pass. Met on 2026-10-11.                      |
 
 ## 12. Risks, assumptions and open decisions
 
