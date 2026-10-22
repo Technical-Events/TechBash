@@ -1,188 +1,195 @@
 # Database
 
-PostgreSQL on Neon, accessed with Drizzle ORM.
+PostgreSQL on Neon, accessed with Drizzle ORM over the Neon HTTP driver.
 
-> **Status**: the schema and the first SQL migration exist in the repository. No Neon
-> database has been connected and no migration has been applied or verified against a
-> real database. The application runs without one.
+> **Status**: migrations `0000` to `0003` were applied with `psql` to a local PostgreSQL 17
+> and the whole application was exercised against it through Neon's local HTTP proxy
+> (2026-10-22). They have not been applied to a Neon project yet, and `pnpm db:migrate`
+> itself has not been run (see "Local database").
 
 ## Neon setup
 
 1. Create a project at <https://console.neon.tech>.
-2. Copy the **pooled** connection string for the default branch
-   (`postgresql://USER:PASSWORD@HOST/DB?sslmode=require`).
-3. Put it in `.env.local` at the repository root:
+2. Copy the **pooled** connection string (`postgresql://USER:PASSWORD@HOST/DB?sslmode=require`).
+3. Put it in `.env.local` as `DATABASE_URL`, with `BETTER_AUTH_SECRET`.
+4. `pnpm db:migrate`, then `pnpm admin:create <email> "<name>"`.
 
-   ```env
-   DATABASE_URL=postgresql://...
-   ```
+Use separate Neon branches for production, previews and development.
 
-4. Apply the migrations: `pnpm db:migrate`.
+## Files
 
-Use a separate Neon branch (or project) for production and for development.
-
-## Drizzle setup
-
-| File                | Purpose                                                                                                       |
-| ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `lib/db/schema.ts`  | Table and enum definitions. Source of truth.                                                                  |
-| `lib/db/index.ts`   | `getDb()`: lazy Drizzle client over the Neon HTTP driver. Returns `null` without `DATABASE_URL`. Server-only. |
-| `drizzle.config.ts` | `drizzle-kit` configuration. Loads `.env.local` with `process.loadEnvFile`.                                   |
-| `drizzle/`          | Generated SQL migrations and snapshots. Committed.                                                            |
-
-Usage on the server:
-
-```ts
-import { getDb } from "@/lib/db";
-import { quizzes } from "@/lib/db/schema";
-
-const db = getDb();
-if (!db) {
-  // demo mode: no database configured
-}
-const rows = await db.select().from(quizzes);
-```
-
-## Environment variables
-
-| Variable       | Required                                                  | Notes                                                                    |
-| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `DATABASE_URL` | Only for database features and `db:migrate` / `db:studio` | Neon connection string. Never commit it. `db:generate` does not need it. |
+| File                      | Purpose                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `lib/db/schema.ts`        | Tables and enums. Source of truth. Relative imports only (drizzle-kit, Node scripts). |
+| `lib/rounds/constants.ts` | Enum value lists shared by the schema and the app.                                    |
+| `lib/db/index.ts`         | `getDb()`: lazy Drizzle client, `null` without `DATABASE_URL`. Server-only.           |
+| `lib/db/queries/*.ts`     | Queries with more than one caller: content (cached), attempts, results.               |
+| `drizzle.config.ts`       | drizzle-kit configuration. Loads `.env.local`.                                        |
+| `drizzle/`                | SQL migrations and snapshots. Committed.                                              |
+| `scripts/create-admin.ts` | Creates or resets an admin (Better Auth scrypt hash).                                 |
 
 ## Entities
 
 ```mermaid
 erDiagram
-  quizzes ||--o{ questions : has
-  questions ||--o{ answer_options : has
-  users ||--o{ quiz_attempts : makes
-  quizzes ||--o{ quiz_attempts : receives
-
-  quizzes {
-    uuid id PK
-    text slug UK
-    text title
-    text description
-    text category
-    quiz_difficulty difficulty
-    quiz_status status
-    timestamptz created_at
-    timestamptz updated_at
-  }
-  questions {
-    uuid id PK
-    uuid quiz_id FK
-    text prompt
-    question_type type
-    int position
-    timestamptz created_at
-    timestamptz updated_at
-  }
-  answer_options {
-    uuid id PK
-    uuid question_id FK
-    text text
-    boolean is_correct
-    int position
-    timestamptz created_at
-  }
-  contact_submissions {
-    uuid id PK
-    text name
-    text email
-    text subject
-    text message
-    timestamptz created_at
-  }
-  users {
-    uuid id PK
-    text email UK
-    text display_name
-    timestamptz created_at
-  }
-  quiz_attempts {
-    uuid id PK
-    uuid quiz_id FK
-    uuid user_id FK
-    int score
-    int total
-    timestamptz started_at
-    timestamptz completed_at
-  }
+  auth_users ||--o{ auth_sessions : has
+  auth_users ||--o{ auth_accounts : has
+  auth_users |o--o| participants : "signs in as"
+  rounds ||--o{ questions : has
+  questions ||--o{ question_options : has
+  rounds ||--o{ access_keys : "unlocked by"
+  participants ||--o{ round_attempts : makes
+  rounds ||--o{ round_attempts : receives
+  access_keys |o--o{ round_attempts : "used for"
+  round_attempts ||--o{ attempt_answers : contains
+  questions ||--o{ attempt_answers : "answered in"
 ```
 
-`users` and `quiz_attempts` appear in the diagram as a design only. They are not in the
-schema file.
+## Tables
 
-## Implemented and planned tables
+### Better Auth (`auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications`)
 
-| Table                 | State                               | Used by application code                        |
-| --------------------- | ----------------------------------- | ----------------------------------------------- |
-| `quizzes`             | Implemented in schema and migration | No (Phase 2)                                    |
-| `questions`           | Implemented in schema and migration | No (Phase 2)                                    |
-| `answer_options`      | Implemented in schema and migration | No (Phase 2)                                    |
-| `contact_submissions` | Implemented in schema and migration | Yes, `submitContact` when `DATABASE_URL` is set |
-| `users`               | Planned                             | —                                               |
-| `quiz_attempts`       | Planned                             | —                                               |
+Columns follow Better Auth 1.7's core schema; ids are text UUIDs generated by the app
+(`advanced.database.generateId`). `auth_users.role` (`user_role`: `admin`,
+`participant`) is a Better Auth additional field that clients cannot set. Admins have a
+`credential` row in `auth_accounts` with a scrypt hash; participants have no account row
+and no password. Participant users get a placeholder email
+`<participant id>@participants.techbash.invalid`.
 
-### Enums
+### `event_info`
 
-| Enum              | Values                                           |
-| ----------------- | ------------------------------------------------ |
-| `quiz_difficulty` | `beginner`, `intermediate`, `advanced`           |
-| `quiz_status`     | `draft`, `published`, `archived`                 |
-| `question_type`   | `single_choice`, `multiple_choice`, `true_false` |
+Single row, `id = 1` (check constraint). Event name, tagline, introduction, details, date
+(free text), venue, organizer, technical lead name, email and phone,
+`results_published` (participants see their scores), `winner_count`.
 
-Only `single_choice` is supported by the demo scoring code.
+### `people`
 
-### Constraints and indexes
+Faculty and team profiles: `kind` (`person_kind`: `faculty`, `team`), name, role,
+department, bio, email, phone, `photo_url` (Vercel Blob), `position` (sort order).
 
-- `quizzes.slug` is unique.
-- Index on `quizzes (status, category)` for the published catalog query.
-- `questions.quiz_id` → `quizzes.id`, `ON DELETE CASCADE`. Unique `(quiz_id, position)`.
-- `answer_options.question_id` → `questions.id`, `ON DELETE CASCADE`. Unique
-  `(question_id, position)`.
-- All primary keys are `uuid` with `gen_random_uuid()`.
-- Timestamps are `timestamptz`, default `now()`.
+### `rounds`
 
-### Notes for the planned tables
+Exactly three rows, `number` 1 to 3 (unique, check constraint), seeded by `0003`. Title,
+description, instructions, `status` (`round_status`: `draft`, `open`, `closed`),
+`duration_minutes` (null = no limit, else > 0), `sequential`.
 
-- `users`: no password column. If accounts are approved, an authentication library or
-  provider owns credentials (see ADR-008).
-- `quiz_attempts.user_id` should be nullable so anonymous attempts stay possible.
-  Per-question answers would need an `attempt_answers` table; decide when Phase 3 starts.
+### `questions` and `question_options`
 
-## Migration workflow
+`questions`: `round_id` (cascade), `position`, `type` (`question_type`: `single_choice`,
+`short_text`), `prompt`, optional `code` and `code_language`, `accepted_answers text[]`
+(short text only), `points > 0`. `question_options`: `question_id` (cascade),
+`position`, `text`, `is_correct`. Editing a question updates option rows in place so
+answers that reference option ids stay valid; it then re-scores stored answers.
 
-```bash
-pnpm db:generate   # diff lib/db/schema.ts against drizzle/ and write a new SQL file
-pnpm db:migrate    # apply pending migrations to DATABASE_URL
-pnpm db:studio     # browse the database (needs DATABASE_URL)
-```
+### `access_keys`
+
+`round_id` (cascade), `label`, `key_hash` (HMAC-SHA256 of the normalized key, keyed with
+`BETTER_AUTH_SECRET`), `key_hint` (last four characters), `revoked_at`. Unique
+`(round_id, key_hash)`. The app also refuses one key active on two rounds.
+
+### `participants`
+
+The roster. `usn` unique (normalized: uppercase, no spaces or dashes), `full_name`,
+`user_id` unique FK to `auth_users` (set null on delete), `last_login_at`.
+
+### `round_attempts`
+
+One per participant and round (unique), created when a valid key is entered.
+`access_key_id` (set null), `started_at`, `deadline_at` (fixed at unlock from the round's
+limit), `submitted_at`, `auto_submitted`. Deleting a participant or a round cascades.
+
+### `attempt_answers`
+
+One per attempt and question (unique). `answer` (option id or typed text), `is_correct`,
+`points_awarded`, `tries`, `answered_at`. A round's score is the sum of
+`points_awarded`. In sequential rounds a correct row is never overwritten.
+
+### `throttle_events`
+
+Failed logins and access-key attempts: `bucket`, `created_at`, index on both. Old rows are
+pruned opportunistically.
+
+### `contact_submissions`
+
+Unchanged from the scaffold.
+
+## Migrations
+
+| File                             | Contents                                                                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0000_init.sql`                  | Scaffold tables (demo quiz model, contact).                                                                                                  |
+| `0001_drop_demo_quiz_tables.sql` | Drops the unused demo quiz tables and enums.                                                                                                 |
+| `0002_event_platform.sql`        | Auth, content, rounds, keys, attempts, throttle tables.                                                                                      |
+| `0003_seed_event_content.sql`    | **Custom** (`drizzle-kit generate --custom`): the 3 rounds, event info, Devika Ma'am and Anusha Ma'am. Idempotent for rounds and event info. |
+
+The drop and create were generated in two steps so drizzle-kit would not prompt about
+renaming the old `questions` table.
+
+Workflow:
 
 1. Edit `lib/db/schema.ts`.
-2. Run `pnpm db:generate`.
-3. Read the generated SQL in `drizzle/`. Fix the schema and regenerate if it is wrong.
-4. Commit the schema change and the migration together.
-5. Run `pnpm db:migrate` against the development database, then production on deploy.
+2. `pnpm db:generate`, read the SQL.
+3. Commit schema and migration together.
+4. `pnpm db:migrate` on development, then production.
 
-## Schema evolution conventions
+Never edit an applied migration. Never use `drizzle-kit push` on a shared database.
 
-- Never edit a migration that has been applied anywhere shared. Add a new one.
-- Do not use `drizzle-kit push` on shared databases; it skips the migration history.
-- Table and column names are `snake_case`; TypeScript fields are `camelCase`.
-- Destructive changes (drop or rename of a column) ship in two steps: stop using the
-  column, then drop it in a later migration.
-- Add an index only with a query that needs it, and name the query in the commit message.
-- Update this file and the ER diagram in the same change as the schema.
+## Writes without transactions
 
-## Security and credential handling
+The Neon HTTP driver has no interactive transactions. Multi-statement writes use
+`db.batch()` (one transaction): creating a question with its options, editing options,
+swapping positions, creating an admin. State changes that must not race are single
+conditional statements (`... WHERE submitted_at IS NULL`, `ON CONFLICT DO NOTHING`,
+`setWhere` on upserts).
 
-- `DATABASE_URL` lives in `.env.local` locally and in the host's secret store in
-  production. `.env*` files are ignored by Git except `.env.example`.
-- `lib/db/**` imports `server-only`; a client import fails the build.
-- Queries go through Drizzle's parameterized builders. No string-built SQL.
-- Connection strings and raw database errors are never logged to the client or returned
-  from an endpoint.
-- Use a database role with the least privileges the application needs once production is
-  set up. Not done yet.
+## Local database
+
+For end-to-end checks without Neon:
+
+```yaml
+# compose.yml (outside the repository)
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      {
+        POSTGRES_USER: postgres,
+        POSTGRES_PASSWORD: postgres,
+        POSTGRES_DB: main,
+      }
+    ports: ["55432:5432"]
+  neon-proxy:
+    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    environment:
+      {
+        PG_CONNECTION_STRING: "postgres://postgres:postgres@postgres:5432/main",
+      }
+    ports: ["4444:4444"]
+```
+
+The proxy reads a mock control plane from the same database:
+
+```sql
+CREATE SCHEMA neon_control_plane;
+CREATE TABLE neon_control_plane.endpoints (endpoint_id varchar(255) primary key, allowed_ips varchar(255));
+INSERT INTO neon_control_plane.endpoints VALUES ('db', '0.0.0.0/0');
+```
+
+Apply `drizzle/*.sql` in order with `psql`, then run the app with:
+
+```env
+DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5432/main
+NEON_FETCH_ENDPOINT=http://localhost:4444/sql
+```
+
+`pnpm db:migrate` does not work against this setup: drizzle-kit uses the Neon WebSocket
+driver, which the proxy does not serve.
+
+## Security
+
+- Credentials only in `.env.local` or the host's secret store.
+- `lib/db`, `lib/auth`, `lib/security` import `server-only`.
+- Drizzle builders only; the few `sql` fragments interpolate parameters, never strings.
+- Database errors are logged on the server; clients get generic messages.
+- No plaintext secrets stored: admin passwords are scrypt hashes (Better Auth), access
+  keys are HMACs, sessions are random tokens.

@@ -2,191 +2,158 @@
 
 ## High-level view
 
-One Next.js application. No separate backend service.
+One Next.js application on Vercel. No separate backend service.
 
 ```mermaid
 flowchart LR
   B[Browser] -->|HTTP| N[Next.js App Router]
   subgraph N1[Next.js server]
-    SC[Server Components<br/>pages and layout]
-    SA[Server Actions<br/>submitDemoQuiz, submitContact]
-    RH[Route Handlers<br/>GET /api/health]
-    L[lib/<br/>validations, quiz, db]
+    SC[Server Components<br/>pages]
+    SA[Server Actions<br/>app/**/actions.ts]
+    RH[Route Handlers<br/>/api/health, /admin/export/kind]
+    AU[Better Auth<br/>lib/auth, not mounted over HTTP]
+    L[lib/<br/>queries, rules, validation]
   end
-  N --> SC
-  N --> SA
-  N --> RH
-  SC --> L
-  SA --> L
+  N --> SC & SA & RH
+  SC --> AU
+  SA --> AU
+  RH --> AU
+  SC & SA & RH --> L
   L -->|drizzle-orm/neon-http| DB[(Neon PostgreSQL)]
+  SA -->|photos| BL[(Vercel Blob)]
 ```
 
-The database edge is optional at runtime. Without `DATABASE_URL` the application runs in
-demo mode and only contact persistence is unavailable.
-
-## Responsibilities
-
-| Layer                                                                         | Does                                                                       | Does not                                                   |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Server Components (`app/**/page.tsx`, `components/**` without `"use client"`) | Render pages, read server-side data, pass plain props to client components | Hold UI state                                              |
-| Client Components (`"use client"`)                                            | Local interaction: menu toggle, quiz answer state, form state              | Import `lib/db`, read secrets, decide scores               |
-| Server Actions (`app/**/actions.ts`)                                          | Validate input with Zod, run business logic, write to the database         | Trust client-computed values                               |
-| Route Handlers (`app/api/**/route.ts`)                                        | HTTP endpoints for non-UI clients                                          | Duplicate what a Server Action already does for our own UI |
-| `lib/`                                                                        | Framework-free logic: schemas, scoring, database access                    | Import React                                               |
-
-## App Router structure
+## Routes
 
 ```text
 app/
-  layout.tsx            root layout: font, metadata, skip link, Navbar, Footer
-  globals.css           design tokens and ASCII utilities
-  page.tsx              /            Home
-  test/page.tsx         /test        catalog, how it works, demo entry
-  test/demo/page.tsx    /test/demo   demo quiz shell (server)
-  test/demo/actions.ts               submitDemoQuiz
-  about/page.tsx        /about
-  contact/page.tsx      /contact
-  contact/actions.ts                 submitContact
-  api/health/route.ts   /api/health
+  layout.tsx                      font, skip link, Navbar, Footer
+  page.tsx                        /            Home (cached content)
+  contact/                        /contact     Contact Us + submitContact
+  test/page.tsx                   /test        login or round dashboard
+  test/actions.ts                 loginParticipant, logout, unlockRound, saveAnswer, submitRound
+  test/round/[number]/page.tsx    /test/round/1..3
+  admin/login/                    /admin/login + adminLogin
+  admin/(panel)/layout.tsx        admin shell (requireAdmin)
+  admin/(panel)/page.tsx          /admin dashboard
+  admin/(panel)/rounds/...        rounds, questions, keys + actions.ts
+  admin/(panel)/participants/...  roster + actions.ts
+  admin/(panel)/results/          ranking, winners, exports
+  admin/(panel)/content/          event info, people + actions.ts
+  admin/(panel)/messages/         contact submissions + actions.ts
+  admin/export/[kind]/route.ts    CSV exports
+  api/health/route.ts             liveness
+  error.tsx, not-found.tsx
 ```
 
-`/test/demo` is a static segment so that a future dynamic route `/test/[slug]` can sit
-next to it.
+## Rendering and caching (Cache Components)
 
-## Rendering and caching
+- Home and Contact read content through `"use cache"` functions in
+  `lib/db/queries/content.ts` tagged `content` / `rounds` (`cacheLife("days")`). They
+  prerender into the static shell. Admin actions call `updateTag()` after every content or
+  round-settings write, so edits show on the next request.
+- Anything that reads the session (`headers()`) sits behind `<Suspense>`: the `/test` gate,
+  the round page, the admin layout. Admin pages are a static shell plus streamed content.
+- The navbar's `usePathname()` is behind its own Suspense boundary so dynamic routes can
+  prerender a shell.
+- Participant and admin data is never cached: every read is fresh.
 
-`next.config.ts` enables Cache Components and Partial Prefetching (the Next.js 16
-generator defaults). Consequences for this codebase:
+## Authentication and authorization
 
-- All five pages have no request-time data, so the build prerenders them as static.
-- A Server Component that reads request data, the database, the clock or random values
-  must sit behind `<Suspense>` or use `"use cache"`. The build fails otherwise.
-- `GET /api/health` calls `connection()` first so its timestamp is produced per request.
-- Do not add `export const dynamic = ...` route config; use the Cache Components model.
-- `LayoutProps`, `PageProps` and `RouteContext` are generated types. `pnpm typecheck`
-  runs `next typegen` before `tsc` for that reason.
+Better Auth (`lib/auth/server.ts`) with the Drizzle adapter on the same Neon database.
+`getAuth()` returns `null` when `DATABASE_URL` or `BETTER_AUTH_SECRET` is missing.
 
-## Server and client boundaries
+| Who         | How they sign in                                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Admin       | Email + password (`emailAndPassword`, sign-up disabled). Created by `pnpm admin:create`.                                                                                                               |
+| Participant | Full name + USN via the `participant-sign-in` plugin: checks the roster, creates the Better Auth user on first login, deletes the user's other sessions, creates a session and sets the signed cookie. |
 
-Client Components in the scaffold, and why each one needs the browser:
+- The Better Auth HTTP handler is **not mounted**. Server Actions call `auth.api.*`
+  directly; `nextCookies()` writes the cookies. This removes every unused endpoint
+  (sign-up, password reset, ...) from the attack surface.
+- Sessions: 12 hours, no sliding refresh, no cookie cache. Every request reads the session
+  row, so ending sessions or deleting a participant takes effect immediately.
+- `lib/auth/session.ts` is the data access layer: `getViewer()` (per-request `cache`),
+  `requireAdmin()`, `requireAdminDb()`, `requireParticipant()`. Every protected page,
+  Server Action and Route Handler calls one of them. Layout checks are only UX.
+- Server Actions get Next.js's built-in Origin check (CSRF).
 
-| Component                             | Reason                                                    |
-| ------------------------------------- | --------------------------------------------------------- |
-| `components/layout/nav-links.tsx`     | Mobile menu open state, active link from `usePathname()`  |
-| `components/quiz/quiz-runner.tsx`     | Selected answers, current question, pending submit        |
-| `components/contact/contact-form.tsx` | Field errors, pending and result state (`useActionState`) |
-
-Everything else is a Server Component. Rules:
-
-- `lib/db/**` and `lib/quiz/demo-quiz.ts` start with `import "server-only"`. Importing
-  them from a Client Component fails the build.
-- Props crossing the boundary are plain serializable data. Quiz questions cross without
-  their answer keys (`toPublicQuiz` strips them).
-
-## API conventions
-
-- Our own UI mutates through Server Actions. They return typed result objects and never
-  throw for expected failures (validation, missing database).
-- Route Handlers return JSON. Planned error envelope:
-  `{ "error": { "code": "string", "message": "string" } }` with a matching HTTP status.
-- Internal error details are logged on the server and never returned to the client.
-- Contracts are listed in `API.md`.
-
-## Data flow
-
-### Demo quiz
+## Round flow
 
 ```mermaid
 sequenceDiagram
-  participant U as Browser
-  participant P as /test/demo (Server Component)
-  participant D as lib/quiz/demo-quiz.ts (server-only)
-  participant A as submitDemoQuiz (Server Action)
-  U->>P: GET /test/demo
-  P->>D: load demo quiz
-  P-->>U: HTML + questions without answer keys
-  U->>A: answers { questionId: optionId }
-  A->>A: Zod validate
-  A->>D: load answer keys
-  A-->>U: score + per-question review
-```
-
-### Contact form
-
-```mermaid
-sequenceDiagram
-  participant U as Browser
-  participant F as ContactForm (client)
-  participant A as submitContact (Server Action)
+  participant P as Participant
+  participant A as Server Actions
   participant DB as Neon
-  U->>F: submit
-  F->>F: Zod validate (fast feedback)
-  F->>A: FormData
-  A->>A: Zod validate (authoritative)
-  alt DATABASE_URL set
-    A->>DB: INSERT contact_submissions
-    A-->>F: status "stored"
-  else not set
-    A-->>F: status "demo" (nothing stored or sent)
-  end
+  P->>A: unlockRound(round, key)
+  A->>A: requireParticipant, round open?, throttle
+  A->>DB: access_keys where hmac(key), not revoked
+  A->>DB: INSERT round_attempts (deadline = now + limit) ON CONFLICT DO NOTHING
+  A-->>P: redirect /test/round/n
+  P->>A: saveAnswer(round, question, answer)
+  A->>A: open? not submitted? before deadline + 15 s? (sequential: current clue?)
+  A->>A: evaluateAnswer (server only)
+  A->>DB: UPSERT attempt_answers
+  A-->>P: saved (sequential: correct / not)
+  P->>A: submitRound(round)
+  A->>DB: UPDATE submitted_at WHERE submitted_at IS NULL
 ```
 
-## Database access and ORM strategy
+- **Deadlines** are enforced on the server. `finalizeExpiredAttempts()` runs before any
+  read of attempt state and sets `submitted_at = deadline_at`, `auto_submitted = true`
+  for attempts past deadline + 15 s grace. The client countdown only triggers a refresh.
+- **Closing a round** submits every open attempt of that round.
+- **Answer keys** stay on the server. `toPublicQuestion()` strips `is_correct` and
+  `accepted_answers`. Sequential rounds send only solved clues and the current one.
+  Non-sequential rounds never reveal correctness. Scores show to participants only when
+  an admin enables it.
+- **Re-scoring**: saving a question re-evaluates every stored answer to it.
 
-- `lib/db/index.ts` exports `getDb()`. It creates the Drizzle client on first use and
-  returns `null` when `DATABASE_URL` is missing. Callers must handle `null`.
-- `lib/db/schema.ts` is the single source of truth for tables.
-- Queries are written where they are used for now. When a second caller needs the same
-  query, move it to `lib/db/queries/<entity>.ts`.
-- Details: `DATABASE.md`.
+## Results
 
-## Validation and error handling
-
-- Zod schemas live in `lib/validations/`. The same schema validates on the client (for
-  immediate feedback) and on the server (authoritative).
-- Server Actions return a discriminated result: success, validation failure with
-  per-field messages, or a generic failure message. Unexpected errors are caught, logged
-  with `console.error` and reported to the user as a generic message.
-- Form errors are tied to their inputs with `aria-describedby` and `aria-invalid`.
-
-## Environment configuration
-
-| Variable       | Required                  | Used by                                |
-| -------------- | ------------------------- | -------------------------------------- |
-| `DATABASE_URL` | No (demo mode without it) | `lib/db/index.ts`, `drizzle.config.ts` |
-
-Local values go in `.env.local`, which is ignored by Git. `.env.example` lists the
-variable names without values. No variable is prefixed `NEXT_PUBLIC_`; nothing from the
-environment is exposed to the browser.
+`getResultsData()` (`lib/db/queries/results.ts`) loads rounds, roster and per-attempt
+scores in four queries, then `rankParticipants()` (`lib/results/ranking.ts`, pure, tested)
+applies the tie-breaks: total score, rounds submitted, total time, final submission time;
+full equality shares the rank. `selectWinners()` takes places 1..N (ties on place N
+included, zero scores excluded). `firstFinisher()` is the earliest participant to submit
+every round. Dashboard, results page and exports all use the same data.
 
 ## Security boundaries
 
-- The browser is untrusted. Every Server Action and Route Handler validates its input.
-- Database credentials exist only in server environment variables.
-- Quiz answer keys stay in server-only modules until the quiz is submitted.
-- `/api/health` reports liveness only. It does not report database state, versions or
-  host details.
-- Not yet covered: rate limiting, spam protection, authentication, security headers
-  beyond Next.js defaults. See `ROADMAP.md` Phase 6.
+- Browser input is untrusted: every action validates with Zod (`lib/validations/`).
+- Throttling (`lib/security/throttle.ts`, table `throttle_events`): participant login 10
+  failures / 15 min per USN and 300 per IP (a venue shares one NAT IP); admin login 5 per
+  email and 30 per IP; access keys 8 per participant and round per 10 min. IP comes from
+  `x-forwarded-for`, which Vercel sets.
+- Access keys are compared as HMACs; the plaintext is shown once to the admin.
+- Photo uploads: 2 MB limit, type sniffed from the file bytes (JPEG, PNG, WebP), stored
+  in Vercel Blob under `people/`; `next/image` only allows that host and path.
+- CSV exports neutralize spreadsheet formulas.
+- Response headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+  `Referrer-Policy`, `Permissions-Policy` (`next.config.ts`).
+- Errors: logged with `console.error` on the server; clients get generic text.
 
-## From demo quiz to database-backed quizzes
+## Environment
 
-The demo was built in the shape of the real system so that only the data source changes.
+| Variable                | Used by                                                           |
+| ----------------------- | ----------------------------------------------------------------- |
+| `DATABASE_URL`          | `lib/db/index.ts`, `drizzle.config.ts`, `scripts/create-admin.ts` |
+| `BETTER_AUTH_SECRET`    | `lib/auth/server.ts`, `lib/security/access-key-hash.ts`           |
+| `BETTER_AUTH_URL`       | `lib/auth/server.ts` (base URL, trusted origin)                   |
+| `BLOB_READ_WRITE_TOKEN` | `@vercel/blob` in `app/admin/(panel)/content/actions.ts`          |
+| `NEON_FETCH_ENDPOINT`   | `lib/db/index.ts`, local development only                         |
+| `VERCEL_*`              | Read by `lib/auth/server.ts` for trusted origins                  |
 
-| Concern            | Demo (now)                             | Database-backed (Phase 2 and 3)                          |
-| ------------------ | -------------------------------------- | -------------------------------------------------------- |
-| Quiz source        | `lib/quiz/demo-quiz.ts`                | `quizzes`, `questions`, `answer_options` through Drizzle |
-| Catalog on `/test` | `lib/quiz/catalog.ts` placeholders     | Query of published quizzes                               |
-| Route              | `/test/demo`                           | `/test/[slug]`                                           |
-| Public shape       | `PublicQuiz` (no answer keys)          | Same type, built from rows without `is_correct`          |
-| Scoring            | `scoreQuiz()` in `lib/quiz/scoring.ts` | Same function, fed from the database                     |
-| Persistence        | None                                   | `quiz_attempts` (planned)                                |
+No variable is prefixed `NEXT_PUBLIC_`.
 
-Steps for the transition:
+## Client Components
 
-1. Seed the tables and add `getPublishedQuizzes()` and `getQuizBySlug()`.
-2. Replace `lib/quiz/catalog.ts` with the query; keep `QuizCard`.
-3. Add `/test/[slug]` that renders the existing `QuizRunner` with a `PublicQuiz`.
-4. Generalize `submitDemoQuiz` into `submitQuiz(slug, answers)` that loads keys from the
-   database and reuses `scoreQuiz()`.
-5. Remove `/test/demo` or keep it as a no-database fallback.
+| Component                             | Why it needs the browser                     |
+| ------------------------------------- | -------------------------------------------- |
+| `components/layout/nav-links.tsx`     | Mobile menu state, active link               |
+| `components/admin/admin-nav.tsx`      | Active admin section                         |
+| `components/admin/bar-chart.tsx`      | Dataset tabs, hover/focus readout            |
+| `components/ui/action-form.tsx`       | `useActionState`, pending, confirm-to-delete |
+| `components/rounds/round-runner.tsx`  | Answers, navigation, autosave, countdown     |
+| `components/contact/contact-form.tsx` | Client validation and result state           |
+| `app/error.tsx`                       | Error boundary                               |

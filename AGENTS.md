@@ -12,10 +12,12 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Purpose
 
-TechBash is a quiz website for technical topics. Its identity is an ASCII, terminal-style
-interface. It is one Next.js application backed by Neon PostgreSQL. Current state: initial
-scaffold with one demo quiz. Read `README.md` for status and `docs/ROADMAP.md` for what is
-confirmed versus only suggested.
+TechBash is a technical event platform: participants log in with full name and USN and
+take three access-key-gated rounds (Quiz, Tech Treasure Hunt, Bug Hunt); admins manage
+rounds, questions, keys, the roster, site content and results. Its identity is an ASCII,
+terminal-style interface. It is one Next.js application backed by Neon PostgreSQL, with
+Better Auth for sessions, deployed to Vercel. Read `README.md` for status and
+`docs/ROADMAP.md` for what is confirmed versus only suggested.
 
 ## Before you change anything
 
@@ -29,29 +31,39 @@ confirmed versus only suggested.
 ## Stack
 
 Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Drizzle ORM, Neon
-(`@neondatabase/serverless`), Zod 4, Lucide React, pnpm. Tests use `node --test`.
+(`@neondatabase/serverless`), Better Auth, Vercel Blob (`@vercel/blob`), Zod 4, Lucide
+React, pnpm. Tests use `node --test`.
 
-Do not add: another backend framework, Redis, queues, an auth provider, an email service,
-a state library, shadcn/ui wholesale, or a CSS-in-JS library. A new dependency needs a
-reason written in `docs/DECISIONS.md`.
+Do not add: another backend framework, Redis, queues, another auth provider, an email
+service, a state library, a chart library, shadcn/ui wholesale, or a CSS-in-JS library. A
+new dependency needs a reason written in `docs/DECISIONS.md`.
 
 ## Folder structure
 
 ```text
-app/                  routes; each route's Server Actions live in its own actions.ts
-  api/health/route.ts the only Route Handler
+app/                       routes; each route's Server Actions live in its own actions.ts
+  page.tsx contact/          public pages (Home, Contact Us)
+  test/                      participant login, round dashboard; test/round/[number]
+  admin/login/               admin sign-in
+  admin/(panel)/             admin pages behind requireAdmin(): dashboard, rounds,
+                             participants, results, content, messages
+  admin/export/[kind]/       CSV exports (Route Handler)
+  api/health/route.ts        liveness Route Handler
 components/
-  ui/                 Button, Panel, Badge, Field, PageHeading (design-system primitives)
-  layout/             Navbar, NavLinks, Footer
-  home/ quiz/ contact/ feature components
+  ui/                        design-system primitives (Button, Panel, Badge, Field,
+                             Checkbox, ActionForm, Table, Stat, Loading, headings)
+  layout/ home/ people/ test/ rounds/ admin/ contact/   feature components
 lib/
-  site.ts             site name and the four nav items
-  db/                 schema.ts, index.ts (getDb)  — server-only
-  quiz/               types, scoring, demo data, placeholder catalog
-  validations/        Zod schemas
-drizzle/              generated SQL migrations (committed, never hand-edited)
-tests/                node:test unit tests
-docs/                 project documentation
+  site.ts                    site name, nav items, event time zone
+  auth/                      Better Auth instance, participant plugin, session DAL
+  db/                        schema.ts, index.ts (getDb), queries/   (server-only)
+  rounds/ participants/ results/ content/   pure logic (tests import these)
+  security/                  access-key HMAC, throttling (server-only)
+  validations/               Zod schemas and the ActionState type
+scripts/create-admin.ts      creates or resets an admin account
+drizzle/                     SQL migrations (generated; 0003 is a custom seed)
+tests/                       node:test unit tests
+docs/                        project documentation
 ```
 
 ## Naming
@@ -60,19 +72,24 @@ docs/                 project documentation
   except where Next.js requires one (`page.tsx`, `layout.tsx`).
 - Database: `snake_case` tables and columns, `camelCase` fields in TypeScript.
 - Server Actions: verb first (`submitContact`). Zod schemas: `somethingSchema`.
-- Import with the `@/` alias. Exceptions: `lib/db/schema.ts` and `tests/` use relative
-  paths, because `drizzle-kit` and Node's test runner do not resolve the alias.
+- Import with the `@/` alias. Exceptions: `lib/db/schema.ts`, `scripts/` and `tests/` use
+  relative paths with `.ts` extensions, because `drizzle-kit` and Node's type stripping do
+  not resolve the alias. Files they import (`lib/rounds/constants.ts`, the pure modules
+  under `lib/`) must not use the alias either.
 
 ## Navigation
 
-The primary navbar has exactly four items: Home, Test, About, Contact Us. They are defined
-once in `lib/site.ts`. Do not add items without an explicit request.
+The primary navbar has exactly three items: Home, Test, Contact Us. They are defined once
+in `lib/site.ts`. The footer adds an Admin link. Do not add items without an explicit
+request. The admin panel has its own section nav (`components/admin/admin-nav.tsx`).
 
 ## Components
 
 - Server Components by default. Add `"use client"` only for state, effects or browser
   APIs, and keep the client part as small as possible.
-- Client Components today: `nav-links.tsx`, `quiz-runner.tsx`, `contact-form.tsx`.
+- Client Components today: `layout/nav-links.tsx`, `admin/admin-nav.tsx`,
+  `admin/bar-chart.tsx`, `ui/action-form.tsx`, `rounds/round-runner.tsx`,
+  `contact/contact-form.tsx`, `app/error.tsx`.
 - Keep pages thin; put sections in `components/<feature>/`.
 - Reuse `components/ui/`. Add a variant to an existing component before creating a new one.
 - No abstraction without a second caller.
@@ -105,8 +122,8 @@ Follow `docs/DESIGN_SYSTEM.md`. The rules that get broken most often:
 
 - Access the database only on the server, through `getDb()` from `@/lib/db`. It returns
   `null` when `DATABASE_URL` is unset; handle that case and keep the app usable.
-- Never import `lib/db` or `lib/quiz/demo-quiz.ts` from a Client Component. Both import
-  `server-only`.
+- Never import `lib/db`, `lib/auth` or `lib/security` from a Client Component. They
+  import `server-only`. (`import type` from them is fine.)
 - Change the schema in `lib/db/schema.ts`, run `pnpm db:generate`, review the SQL, commit
   both. Never edit an applied migration. Never use `drizzle-kit push` on a shared database.
 - Use Drizzle's query builders. No string-concatenated SQL.
@@ -129,7 +146,13 @@ Follow `docs/DESIGN_SYSTEM.md`. The rules that get broken most often:
   Never send stack traces, SQL errors or connection details to the client.
 - Never tell the user something happened when it did not. The contact form reports
   "stored" only after a successful insert.
-- Quiz answer keys must not reach the browser before the quiz is submitted.
+- Answer keys (`is_correct`, `accepted_answers`) never reach the browser. Only
+  `toPublicQuestion()` output crosses to the client. Correctness is revealed only in
+  sequential rounds, and only for the participant's own answer.
+- Every admin page and admin Server Action calls `requireAdmin()` / `requireAdminDb()`
+  itself. The `(panel)` layout check is not a security boundary.
+- Participant actions call `requireParticipant()` and re-check round status, attempt
+  state and the deadline on the server.
 
 ## Testing
 
@@ -146,12 +169,15 @@ pnpm build
 - Test files import with relative paths and explicit `.ts` extensions.
 - If a check cannot run, say exactly why. Do not claim it passed.
 - Do not claim database connectivity or applied migrations unless you ran them.
+- End-to-end checks against a local database: see `docs/DATABASE.md`, "Local database".
 
 ## Scope discipline
 
 - Build what was asked. Items in `docs/ROADMAP.md` marked as suggestions are not approved.
 - Do not implement planned endpoints from `docs/API.md` unless the task requires them.
-- No homemade authentication. No plaintext passwords.
+- No homemade authentication: Better Auth owns users, sessions and cookies. Participant
+  sign-in is a Better Auth plugin (`lib/auth/participant-plugin.ts`). No plaintext
+  passwords; access keys are stored only as HMACs.
 - Prefer deleting code to adding it.
 
 ## Documentation

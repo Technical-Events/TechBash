@@ -92,19 +92,31 @@ The palette is provisional (ADR-004). Changing it means editing the token values
 
 All in `components/ui/`.
 
-| Component              | Purpose                                  | Notes                                                                                                                  |
-| ---------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Button`, `ButtonLink` | Actions and navigation CTAs              | Variants `primary`, `secondary`. Renders its label inside `[ ]`. `ButtonLink` wraps `next/link`.                       |
-| `Panel`                | Bordered container                       | Optional `title` shown as `[ title ]` on the top border. `dashed` marks planned content. Draws four `+` corner glyphs. |
-| `Badge`                | Short status or label                    | Tones `accent`, `amber`, `fg`, `muted`, `danger`.                                                                      |
-| `Field`                | Label, input or textarea, hint and error | Wires `id`, `aria-describedby`, `aria-invalid`.                                                                        |
-| `PageHeading`          | Prompt line, `<h1>` and intro            | Used at the top of every page except Home.                                                                             |
+| Component                       | Purpose                                       | Notes                                                                                                                  |
+| ------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `Button`, `ButtonLink`          | Actions and navigation CTAs                   | Variants `primary`, `secondary`, `danger`. Renders its label inside `[ ]`. `ButtonLink` wraps `next/link`.             |
+| `Panel`                         | Bordered container                            | Optional `title` shown as `[ title ]` on the top border. `dashed` marks planned content. Draws four `+` corner glyphs. |
+| `Badge`                         | Short status or label                         | Tones `accent`, `amber`, `fg`, `muted`, `danger`.                                                                      |
+| `Field`                         | Label, input / textarea / select, hint, error | `multiline` for a textarea, `options` for a select. `id` override when a page repeats a form.                          |
+| `Checkbox`                      | Native checkbox drawn as `[x]` / `[ ]`        | Visible focus via `has-focus-visible`.                                                                                 |
+| `ActionForm`                    | Form bound to a Server Action                 | Pending label, live result (`OK ...` / `! ...`), issue list, one-time secret, `confirmLabel` for a two-click delete.   |
+| `Table`, `EmptyRow`             | Data tables                                   | Scrolls inside its own bordered box, never the page.                                                                   |
+| `Stat`                          | Dashboard number                              | Label, value, optional detail.                                                                                         |
+| `PageHeading`, `SectionHeading` | `$ command` + `<h1>`; `# Title` `<h2>`        |                                                                                                                        |
+| `Loading`                       | Suspense fallback                             | `... label_` in a status region.                                                                                       |
 
-One shared feature component lives outside `ui/`: `components/quiz/progress-bar.tsx`
-renders `[###-------] 3/10` and is used by the quiz runner, the results and the home preview.
+Feature components outside `ui/`: `rounds/progress-bar.tsx` (`[###-------] 3/10`),
+`rounds/round-badges.tsx` (`[OPEN] [20 MIN] [CLUE BY CLUE]`), `rounds/round-runner.tsx`,
+`people/person-card.tsx` (photo or `[DA]` initials frame), `admin/bar-chart.tsx` (bars of
+`accent` / `amber` / `muted` fill in a `line` border; tabs are `aria-pressed` buttons;
+the readout below is a live region), `admin/attempt-cell.tsx` (`-`, `... 3`, `OK 7*`).
 
-Feature components (`components/home`, `components/quiz`, `components/contact`,
-`components/layout`) compose these and must not restyle them with one-off classes.
+Feature components (`components/home`, `components/test`, `components/rounds`,
+`components/admin`, `components/people`, `components/contact`, `components/layout`)
+compose these and must not restyle them with one-off classes.
+
+Code snippets (Bug Hunt) render in a bordered `surface` box with muted line numbers that
+are `aria-hidden` and not selectable; the box scrolls on its own.
 
 CSS utilities in `app/globals.css`:
 
@@ -131,7 +143,7 @@ CSS utilities in `app/globals.css`:
 
 - Mobile first. Breakpoints are Tailwind defaults; `sm` (640px) and `md` (768px) are the
   ones in use.
-- Navbar: below `md` the four links collapse behind a `[ MENU ]` toggle that opens a
+- Navbar: below `md` the three links collapse behind a `[ MENU ]` toggle that opens a
   full-width list with large tap targets. From `md` up they sit in a row.
 - Hero: one ASCII logo, 44 columns wide, with a fluid font size
   (`clamp(7px, 2.5vw, 18px)`) so it fits a 320px screen without scrolling.

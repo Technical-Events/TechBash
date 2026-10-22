@@ -1,6 +1,9 @@
 # TechBash — Project Plan
 
-Status: initial scaffold. Last updated 2026-10-11.
+Status: event platform built (Phase 2). Last updated 2026-10-22.
+
+> Sections 3 to 11 describe the original scaffold and are kept for history. The current
+> scope is in section 13; the architecture is in `ARCHITECTURE.md`.
 
 ## 1. Problem statement and goals
 
@@ -157,3 +160,28 @@ Drizzle → Neon. See `ARCHITECTURE.md` for diagrams and boundaries.
 - Who creates quizzes: developers through seed files, or admins through a UI?
 - Is the green and amber palette final?
 - Do quizzes need timers, negative marking or multiple-answer questions?
+
+## 13. Event platform scope (2026-10-22)
+
+Requested by the organizers:
+
+| ID  | Requirement                                                                                                                | Where                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| E1  | Sections Home, Test, Contact Us in the navbar; user panel and admin panel.                                                 | `lib/site.ts`, `/test`, `/admin`        |
+| E2  | Home: event details and introduction, team names and photos, faculty (Devika Ma'am, Anusha Ma'am) with photos and details. | `/`, admin Content                      |
+| E3  | Participants log in with full name and USN before the test.                                                                | `/test`, ADR-010                        |
+| E4  | Three named rounds, each unlocked by its own access key.                                                                   | `/test`, admin Rounds                   |
+| E5  | Track scores, completion status and submission times.                                                                      | `round_attempts`, `attempt_answers`     |
+| E6  | Admin: manage rounds, questions and answers.                                                                               | admin Rounds                            |
+| E7  | Admin: create, update and revoke access keys.                                                                              | admin Rounds                            |
+| E8  | Admin: participant details (names, USNs).                                                                                  | admin Participants                      |
+| E9  | Admin: completion times and first finisher.                                                                                | admin Dashboard, Results                |
+| E10 | Automatic winner list with tie-break rules.                                                                                | admin Results, `lib/results/ranking.ts` |
+| E11 | Admin: all test data, analytics and statistics, exports.                                                                   | Dashboard, participant detail, exports  |
+| E12 | Admin: event information and website content.                                                                              | admin Content                           |
+| E13 | Contact Us: technical lead S. Mohammed Sharwan (sharwan@ajiet.edu.in), faculty with photos, profiles and contact details.  | `/contact`                              |
+| E14 | Next.js, Neon, Better Auth, Vercel. Responsive. Server-side key validation.                                                | whole codebase                          |
+
+Decisions taken with the organizers: roster-approved USN login; per-question types
+(choice or text, optional code); photos uploaded by admins (Vercel Blob); ASCII design
+identity kept; About page removed (Home carries the event introduction).

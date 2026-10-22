@@ -54,7 +54,7 @@ when a decision changes.
 
 ## ADR-005 — Demo quiz is local data, scored on the server
 
-- **Status**: Accepted (2026-10-11)
+- **Status**: Superseded by ADR-011 (2026-10-22). The demo quiz was removed.
 - **Context**: The scaffold needs a working quiz before the database-backed catalog
   exists. A purely client-side quiz would ship the answer key to the browser.
 - **Decision**: Demo questions and their answers live in `lib/quiz/demo-quiz.ts`, a
@@ -89,7 +89,7 @@ when a decision changes.
 
 ## ADR-008 — User accounts and authentication
 
-- **Status**: Open
+- **Status**: Superseded by ADR-010 (2026-10-22)
 - **Context**: Progress tracking needs identity. The brief forbids a homemade
   authentication system and external providers at this stage.
 - **Decision**: None. `users` and `quiz_attempts` are designed in `DATABASE.md` but not
@@ -98,6 +98,71 @@ when a decision changes.
 
 ## ADR-009 — Hosting target
 
-- **Status**: Open
+- **Status**: Superseded by ADR-014 (2026-10-22)
 - **Context**: The code assumes a host that runs Next.js with serverless functions.
 - **Decision**: None. Nothing in the scaffold is host-specific.
+
+## ADR-010 — Better Auth, with a roster-checked participant sign-in
+
+- **Status**: Accepted (2026-10-22)
+- **Context**: The event needs an admin login and a participant login by full name and
+  USN only. The brief names Better Auth. A homemade session system is forbidden.
+- **Decision**: Better Auth 1.7 with the Drizzle adapter. Admins use email and password
+  (sign-up disabled; accounts come from `scripts/create-admin.ts`). Participants sign in
+  through a small Better Auth plugin that checks the admin-approved roster, creates the
+  user on first login, ends the user's other sessions and lets Better Auth create the
+  session and signed cookie. The HTTP handler is not mounted; Server Actions call
+  `auth.api` with `nextCookies()`. Sessions last 12 hours with no refresh and no cookie
+  cache.
+- **Consequences**: No passwords for participants, so knowing a name and USN is enough to
+  log in. Accepted for an on-site event because of the roster, single-session rule,
+  per-round keys handed out at the venue, and throttling. Better Auth's own rate limiter
+  only covers its HTTP handler, so throttling lives in our actions (ADR-013).
+
+## ADR-011 — Rounds, questions and answers in the database, scored on write
+
+- **Status**: Accepted (2026-10-22)
+- **Context**: Three fixed rounds with admin-managed questions; quiz, treasure hunt (one
+  clue at a time) and bug hunt (code snippets).
+- **Decision**: One question model for all rounds: `single_choice` or `short_text`, an
+  optional code snippet, points. Rounds can be `sequential`. Each answer is evaluated
+  when saved and the result stored; scores are sums. Editing an answer key re-scores
+  stored answers. Time limits are fixed per attempt at unlock and enforced on the server.
+- **Consequences**: Results are cheap to compute and exportable. Multiple-answer questions
+  are not supported.
+
+## ADR-012 — Access keys stored as HMACs
+
+- **Status**: Accepted (2026-10-22)
+- **Decision**: Keys are normalized (case, spaces, dashes ignored) and stored as
+  HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`, plus a four-character hint. The admin sees
+  the key once and can rotate it.
+- **Consequences**: A database leak does not reveal keys. Rotating the secret invalidates
+  every key.
+
+## ADR-013 — Database-backed throttling
+
+- **Status**: Accepted (2026-10-22)
+- **Context**: Name+USN login and short access keys need brute-force protection. Redis is
+  ruled out.
+- **Decision**: Failures are rows in `throttle_events`, counted in a sliding window per
+  bucket. Per-account limits are tight; per-IP limits are loose because a venue shares one
+  public IP.
+- **Consequences**: One extra query per attempt. Adequate for one event's traffic.
+
+## ADR-014 — Vercel hosting and Vercel Blob for photos
+
+- **Status**: Accepted (2026-10-22). Not yet deployed.
+- **Decision**: Deploy on Vercel. Team and faculty photos upload through a Server Action
+  to Vercel Blob (`@vercel/blob`), type-checked from the file bytes, max 2 MB. Server
+  Action body limit raised to 3 MB.
+- **Consequences**: One new dependency and one environment variable. Without the token,
+  the site works and the photo field is disabled.
+
+## ADR-015 — Charts without a chart library
+
+- **Status**: Accepted (2026-10-22)
+- **Decision**: Dashboard charts are a small client component of horizontal bars drawn
+  with design tokens, with dataset tabs and a hover/focus readout.
+- **Consequences**: Charts match the ASCII identity, stay accessible and add no
+  dependency. Only bar charts exist.
