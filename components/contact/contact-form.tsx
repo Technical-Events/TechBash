@@ -50,9 +50,9 @@ function Form({ onReset }: { onReset: () => void }) {
     return (
       <Panel title="result">
         <div role="status">
-          <h2 className={stored ? "text-lg text-accent" : "text-lg text-amber"}>
+          <h3 className={stored ? "text-lg text-accent" : "text-lg text-amber"}>
             {stored ? "Message stored" : "Demo mode: nothing was sent"}
-          </h2>
+          </h3>
           <p className="mt-3 max-w-[62ch]">
             {stored
               ? "Your message was saved to the TechBash database. No email is sent, so a reply depends on someone reading it there."

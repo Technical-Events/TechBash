@@ -16,16 +16,18 @@ export function Footer() {
         </div>
         <nav aria-label="Footer">
           <ul className="flex flex-col md:flex-row md:gap-6">
-            {navItems.map(({ href, label }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="flex min-h-11 items-center text-sm tracking-[0.08em] text-muted uppercase transition-colors duration-100 hover:text-accent md:min-h-0"
-                >
-                  {label}
-                </Link>
-              </li>
-            ))}
+            {[...navItems, { href: "/admin", label: "Admin" }].map(
+              ({ href, label }) => (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className="flex min-h-11 items-center text-sm tracking-[0.08em] text-muted uppercase transition-colors duration-100 hover:text-accent md:min-h-0"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ),
+            )}
           </ul>
         </nav>
       </div>
