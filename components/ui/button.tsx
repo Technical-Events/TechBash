@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary";
+type Variant = "primary" | "secondary" | "danger";
 
 const base =
   "inline-flex min-h-11 items-center justify-center border px-4 text-sm font-bold uppercase tracking-[0.08em] whitespace-nowrap transition-colors duration-100 active:translate-y-px";
@@ -12,6 +12,7 @@ const variants: Record<Variant, string> = {
     "border-accent bg-accent text-bg hover:bg-transparent hover:text-accent",
   secondary:
     "border-line text-fg hover:border-accent hover:bg-accent hover:text-bg",
+  danger: "border-danger text-danger hover:bg-danger hover:text-bg",
 };
 
 const disabled =
