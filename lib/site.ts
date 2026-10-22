@@ -1,14 +1,16 @@
 export const site = {
   name: "TechBash",
-  tagline: "Challenge your knowledge",
+  tagline: "Three rounds. One terminal.",
   description:
-    "TechBash is a quiz platform for technical topics with a terminal-inspired, ASCII interface.",
+    "TechBash is a technical event with three access-controlled rounds: a quiz, a tech treasure hunt and a bug hunt.",
 } as const;
 
 /** The primary navigation. The navbar and footer both render exactly these. */
 export const navItems = [
   { href: "/", label: "Home" },
   { href: "/test", label: "Test" },
-  { href: "/about", label: "About" },
   { href: "/contact", label: "Contact Us" },
 ] as const;
+
+/** Times are shown in the venue's time zone, whatever the server's is. */
+export const EVENT_TIME_ZONE = "Asia/Kolkata";
