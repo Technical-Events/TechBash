@@ -150,20 +150,20 @@ Details: [docs/DEPLOYMENT.md, section 4](docs/DEPLOYMENT.md#4-admin-accounts).
 
 ## Commands
 
-| Command                 | What it does                                                                |
-| ----------------------- | --------------------------------------------------------------------------- |
-| `pnpm dev`              | Development server                                                          |
-| `pnpm build`            | Production build                                                            |
-| `pnpm start`            | Serve the production build                                                  |
-| `pnpm typecheck`        | Type check                                                                  |
-| `pnpm lint`             | ESLint                                                                      |
-| `pnpm test`             | Unit tests                                                                  |
-| `pnpm format`           | Prettier                                                                    |
-| `pnpm db:generate`      | Create a migration from `lib/db/schema.ts`                                  |
-| `pnpm db:migrate`       | Apply migrations to `DATABASE_URL`                                          |
-| `pnpm db:studio`        | Browse the database                                                         |
-| `pnpm admin:create`     | Create an admin or reset an admin's password                                |
-| `pnpm questions:import` | Load questions from `private/question-bank.json` (`--dry-run`, `--replace`) |
+| Command                 | What it does                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Development server                                                                       |
+| `pnpm build`            | Production build                                                                         |
+| `pnpm start`            | Serve the production build                                                               |
+| `pnpm typecheck`        | Type check                                                                               |
+| `pnpm lint`             | ESLint                                                                                   |
+| `pnpm test`             | Unit tests                                                                               |
+| `pnpm format`           | Prettier                                                                                 |
+| `pnpm db:generate`      | Create a migration from `lib/db/schema.ts`                                               |
+| `pnpm db:migrate`       | Apply migrations to `DATABASE_URL`                                                       |
+| `pnpm db:studio`        | Browse the database                                                                      |
+| `pnpm admin:create`     | Create an admin or reset an admin's password                                             |
+| `pnpm questions:import` | Load questions from `private/question-bank.json` (`--round=N`, `--dry-run`, `--replace`) |
 
 Before committing: `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
 

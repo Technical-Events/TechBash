@@ -282,7 +282,7 @@ Their password and sessions are removed with it.
 3. **Questions**: put the bank in `private/question-bank.json` (gitignored), check it with
    `pnpm questions:import --dry-run`, then load it with
    `DATABASE_URL="<prod url>" pnpm questions:import`. A round that already has questions is
-   refused; `--replace` swaps them while the round is in Draft and nobody has unlocked it.
+   refused; `--round=N` imports one round only, and `--replace` swaps them while the round is in Draft and nobody has unlocked it.
 4. **Rounds**: check time limits (round 1: 30 minutes); create the access keys from
    `private/access-keys.xlsx` (label in **Label**, key in **Custom key**). Keep every round
    in **Draft**.
