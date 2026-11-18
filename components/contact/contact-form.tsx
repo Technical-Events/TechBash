@@ -85,6 +85,12 @@ function Form({ onReset }: { onReset: () => void }) {
               attention.
             </p>
           )}
+          {state.status === "throttled" && !clientErrors && (
+            <p className="border border-danger px-3 py-2 text-sm text-danger">
+              ! Too many messages from this network. Nothing was sent. Try again
+              in an hour.
+            </p>
+          )}
           {state.status === "error" && !clientErrors && (
             <p className="border border-danger px-3 py-2 text-sm text-danger">
               ! Your message could not be saved. Nothing was sent. Try again

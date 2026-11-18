@@ -35,6 +35,7 @@ export type ContactFormState =
   | { status: "invalid"; fieldErrors: ContactFieldErrors }
   | { status: "stored" }
   | { status: "demo" }
+  | { status: "throttled" }
   | { status: "error" };
 
 /** Runs on the client for fast feedback and on the server as the authority. */
