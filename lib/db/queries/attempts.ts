@@ -17,6 +17,7 @@ import {
   questionOptions,
   questions,
   roundAttempts,
+  roundQualifiers,
   rounds,
 } from "@/lib/db/schema";
 import type { PublicQuestion } from "@/lib/rounds/types";
@@ -76,7 +77,34 @@ export type ParticipantRoundCard = {
   maxScore: number;
   attempt: AttemptState | null;
   score: number;
+  /** False when the round admits only the previous round's top N and this participant is not one of them. */
+  qualified: boolean;
+  /** The admin's top N for this round, or null when everyone may take it. */
+  qualifierLimit: number | null;
 };
+
+/**
+ * Whether a participant may take a round: always, unless the admin limited
+ * it to the previous round's top N.
+ */
+export async function isQualified(
+  db: Db,
+  round: { id: string; qualifierLimit: number | null },
+  participantId: string,
+): Promise<boolean> {
+  if (round.qualifierLimit === null) return true;
+  const [row] = await db
+    .select({ rank: roundQualifiers.rank })
+    .from(roundQualifiers)
+    .where(
+      and(
+        eq(roundQualifiers.roundId, round.id),
+        eq(roundQualifiers.participantId, participantId),
+      ),
+    )
+    .limit(1);
+  return row !== undefined;
+}
 
 /** The three rounds as one participant sees them on the Test page. */
 export async function getParticipantRounds(
@@ -84,7 +112,7 @@ export async function getParticipantRounds(
   participantId: string,
 ): Promise<ParticipantRoundCard[]> {
   await finalizeExpiredAttempts(db);
-  const [roundRows, totals, attempts] = await Promise.all([
+  const [roundRows, totals, attempts, qualifiedRows] = await Promise.all([
     db.select().from(rounds).orderBy(asc(rounds.number)),
     db
       .select({
@@ -106,7 +134,12 @@ export async function getParticipantRounds(
       .leftJoin(attemptAnswers, eq(attemptAnswers.attemptId, roundAttempts.id))
       .where(eq(roundAttempts.participantId, participantId))
       .groupBy(roundAttempts.id),
+    db
+      .select({ roundId: roundQualifiers.roundId })
+      .from(roundQualifiers)
+      .where(eq(roundQualifiers.participantId, participantId)),
   ]);
+  const qualifiedFor = new Set(qualifiedRows.map((row) => row.roundId));
 
   return roundRows.map((round) => {
     const total = totals.find((t) => t.roundId === round.id);
@@ -124,6 +157,8 @@ export async function getParticipantRounds(
       maxScore: total?.maxScore ?? 0,
       attempt: attempt?.attempt ?? null,
       score: attempt?.score ?? 0,
+      qualified: round.qualifierLimit === null || qualifiedFor.has(round.id),
+      qualifierLimit: round.qualifierLimit,
     };
   });
 }
@@ -218,7 +253,10 @@ export async function getAttemptAnswers(db: Db, attemptId: string) {
     .where(eq(attemptAnswers.attemptId, attemptId));
 }
 
-/** One round for the participant's round page. `null` when not unlocked. */
+/**
+ * One round for the participant's round page. `null` when not unlocked,
+ * or when the participant is not (or no longer) qualified for it.
+ */
 export async function getParticipantRound(
   db: Db,
   participantId: string,
@@ -231,8 +269,11 @@ export async function getParticipantRound(
     .where(eq(rounds.number, roundNumber))
     .limit(1);
   if (!round) return null;
-  const attempt = await getAttempt(db, participantId, round.id);
-  if (!attempt) return null;
+  const [attempt, qualified] = await Promise.all([
+    getAttempt(db, participantId, round.id),
+    isQualified(db, round, participantId),
+  ]);
+  if (!attempt || !qualified) return null;
 
   const [list, answerRows] = await Promise.all([
     getRoundQuestions(db, round.id),

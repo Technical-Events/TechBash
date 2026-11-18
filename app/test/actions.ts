@@ -15,6 +15,7 @@ import {
   getAttempt,
   getAttemptAnswers,
   getRoundQuestions,
+  isQualified,
 } from "@/lib/db/queries/attempts";
 import {
   accessKeys,
@@ -42,6 +43,13 @@ import {
 
 const GENERIC_ERROR =
   "Something went wrong on our side. Try again in a moment.";
+
+function notQualified(round: {
+  number: number;
+  qualifierLimit: number | null;
+}) {
+  return `This round is open only to the top ${round.qualifierLimit} of round ${round.number - 1}.`;
+}
 
 /** Full name + USN sign-in against the roster. Redirects to /test on success. */
 export async function loginParticipant(
@@ -137,6 +145,9 @@ export async function unlockRound(
     if (round.status === "closed") {
       return { status: "error", message: "This round is closed." };
     }
+    if (!(await isQualified(db, round, viewer.participantId))) {
+      return { status: "error", message: notQualified(round) };
+    }
 
     const existing = await getAttempt(db, viewer.participantId, round.id);
     if (!existing) {
@@ -217,6 +228,10 @@ export async function saveAnswer(input: unknown): Promise<SaveAnswerResult> {
         error: "This round is already submitted.",
         expired: true,
       };
+    }
+    // The admin can change who advances after an attempt has started.
+    if (!(await isQualified(db, round, viewer.participantId))) {
+      return { ok: false, error: notQualified(round), expired: true };
     }
     if (
       attempt.deadlineAt &&
