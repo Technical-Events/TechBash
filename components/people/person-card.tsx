@@ -68,7 +68,7 @@ export function PersonCard({
               <dd className="min-w-0 break-all">
                 <a
                   href={`mailto:${person.email}`}
-                  className="text-accent underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 items-center text-accent underline-offset-4 hover:underline"
                 >
                   {person.email}
                 </a>
@@ -81,7 +81,7 @@ export function PersonCard({
               <dd>
                 <a
                   href={`tel:${person.phone.replace(/[^0-9+]/g, "")}`}
-                  className="text-accent underline-offset-4 hover:underline"
+                  className="inline-flex min-h-11 items-center text-accent underline-offset-4 hover:underline"
                 >
                   {person.phone}
                 </a>

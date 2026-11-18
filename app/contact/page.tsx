@@ -36,7 +36,7 @@ export default async function ContactPage() {
                 <dd className="min-w-0 break-all">
                   <a
                     href={`mailto:${info.leadEmail}`}
-                    className="text-accent underline-offset-4 hover:underline"
+                    className="inline-flex min-h-11 items-center text-accent underline-offset-4 hover:underline"
                   >
                     {info.leadEmail}
                   </a>
@@ -48,7 +48,7 @@ export default async function ContactPage() {
                   <dd>
                     <a
                       href={`tel:${info.leadPhone.replace(/[^0-9+]/g, "")}`}
-                      className="text-accent underline-offset-4 hover:underline"
+                      className="inline-flex min-h-11 items-center text-accent underline-offset-4 hover:underline"
                     >
                       {info.leadPhone}
                     </a>

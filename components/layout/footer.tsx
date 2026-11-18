@@ -21,7 +21,7 @@ export function Footer() {
                 <li key={href}>
                   <Link
                     href={href}
-                    className="flex min-h-11 items-center text-sm tracking-[0.08em] text-muted uppercase transition-colors duration-100 hover:text-accent md:min-h-0"
+                    className="flex min-h-11 items-center text-sm tracking-[0.08em] text-muted uppercase transition-colors duration-100 hover:text-accent"
                   >
                     {label}
                   </Link>
