@@ -27,10 +27,11 @@ import { evaluateAnswer } from "@/lib/rounds/evaluate";
 import type { SaveAnswerResult, SubmitRoundResult } from "@/lib/rounds/types";
 import { hashAccessKey } from "@/lib/security/access-key-hash";
 import {
+  type Attempt,
+  beginAttempt,
   clearFailures,
   clientIp,
-  isThrottled,
-  recordFailure,
+  releaseAttempt,
   rules,
 } from "@/lib/security/throttle";
 import { participantLoginSchema } from "@/lib/validations/auth";
@@ -74,13 +75,13 @@ export async function loginParticipant(
   const { usn, fullName } = parsed.data;
   const usnBucket = `participant-login:usn:${usn}`;
   const ipBucket = `participant-login:ip:${await clientIp()}`;
-  const buckets = [ipBucket, usnBucket];
+  let attempt: Attempt | null = null;
   try {
-    const throttled = await isThrottled(db, [
+    attempt = await beginAttempt(db, [
       [usnBucket, rules.participantLoginAccount],
       [ipBucket, rules.participantLoginIp],
     ]);
-    if (throttled) {
+    if (!attempt) {
       return {
         status: "error",
         message:
@@ -92,11 +93,14 @@ export async function loginParticipant(
       headers: await headers(),
     });
     await clearFailures(db, usnBucket);
+    await releaseAttempt(db, attempt);
   } catch (error) {
+    // A wrong name or USN stays recorded as a failure.
     if (isAPIError(error) && error.status === "UNAUTHORIZED") {
-      await recordFailure(db, buckets);
       return { status: "error", message: PARTICIPANT_MISMATCH };
     }
+    // Anything else is not the visitor's mistake: do not count it.
+    if (attempt) await releaseAttempt(db, attempt).catch(() => undefined);
     if (isAPIError(error) && error.status === "CONFLICT") {
       return { status: "error", message: error.message };
     }
@@ -133,6 +137,7 @@ export async function unlockRound(
   if (!db) return { status: "error", message: GENERIC_ERROR };
 
   const bucket = `access-key:${viewer.participantId}:${parsed.data.round}`;
+  let attempt: Attempt | null = null;
   try {
     const [round] = await db
       .select()
@@ -151,7 +156,8 @@ export async function unlockRound(
 
     const existing = await getAttempt(db, viewer.participantId, round.id);
     if (!existing) {
-      if (await isThrottled(db, [[bucket, rules.accessKey]])) {
+      attempt = await beginAttempt(db, [[bucket, rules.accessKey]]);
+      if (!attempt) {
         return {
           status: "error",
           message: "Too many wrong keys. Wait 10 minutes before trying again.",
@@ -169,7 +175,7 @@ export async function unlockRound(
         )
         .limit(1);
       if (!key) {
-        await recordFailure(db, [bucket]);
+        // The attempt stays recorded as a failure.
         return {
           status: "error",
           message: "That key is not valid for this round.",
@@ -193,6 +199,7 @@ export async function unlockRound(
     }
   } catch (error) {
     console.error("unlockRound failed", error);
+    if (attempt) await releaseAttempt(db, attempt).catch(() => undefined);
     return { status: "error", message: GENERIC_ERROR };
   }
   redirect(`/test/round/${parsed.data.round}`);

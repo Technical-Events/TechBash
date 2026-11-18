@@ -6,10 +6,11 @@ import { redirect } from "next/navigation";
 import { getAuth } from "@/lib/auth/server";
 import { getDb } from "@/lib/db";
 import {
+  type Attempt,
+  beginAttempt,
   clearFailures,
   clientIp,
-  isThrottled,
-  recordFailure,
+  releaseAttempt,
   rules,
 } from "@/lib/security/throttle";
 import { adminLoginSchema } from "@/lib/validations/auth";
@@ -36,15 +37,17 @@ export async function adminLogin(
     };
   }
 
+  const ip = await clientIp();
   const emailBucket = `admin-login:email:${parsed.data.email}`;
-  const ipBucket = `admin-login:ip:${await clientIp()}`;
-  const buckets = [ipBucket, emailBucket];
+  const emailIpBucket = `admin-login:email-ip:${parsed.data.email}:${ip}`;
+  let attempt: Attempt | null = null;
   try {
-    const throttled = await isThrottled(db, [
-      [emailBucket, rules.adminLoginAccount],
-      [ipBucket, rules.adminLoginIp],
+    attempt = await beginAttempt(db, [
+      [emailIpBucket, rules.adminLoginEmailIp],
+      [emailBucket, rules.adminLoginEmail],
+      [`admin-login:ip:${ip}`, rules.adminLoginIp],
     ]);
-    if (throttled) {
+    if (!attempt) {
       return {
         status: "error",
         message: "Too many failed attempts. Wait 15 minutes.",
@@ -55,22 +58,24 @@ export async function adminLogin(
       headers: await headers(),
     });
     if (result.user.role !== "admin") {
-      // Only admins have passwords; refuse anything else outright.
+      // Only admins have passwords; refuse anything else outright. The
+      // attempt stays recorded as a failure.
       const context = await auth.$context;
       await context.internalAdapter.deleteUserSessions(result.user.id);
-      await recordFailure(db, buckets);
       return { status: "error", message: REJECTED };
     }
-    await clearFailures(db, emailBucket);
+    await clearFailures(db, emailIpBucket);
+    await releaseAttempt(db, attempt);
   } catch (error) {
     if (
       isAPIError(error) &&
       (error.status === "UNAUTHORIZED" || error.status === "BAD_REQUEST")
     ) {
-      await recordFailure(db, buckets);
       return { status: "error", message: REJECTED };
     }
     console.error("adminLogin failed", error);
+    // Our failure, not a wrong password: do not count it.
+    if (attempt) await releaseAttempt(db, attempt).catch(() => undefined);
     return {
       status: "error",
       message: "Something went wrong. Try again in a moment.",
