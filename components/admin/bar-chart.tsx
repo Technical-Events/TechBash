@@ -86,7 +86,7 @@ export function BarChart({
         </div>
       )}
       {hasData ? (
-        <ul className="mt-4 space-y-1.5">
+        <ul className="mt-4 lg:space-y-1.5">
           {dataset.bars.map((bar) => (
             <li key={bar.label}>
               <button
@@ -94,7 +94,7 @@ export function BarChart({
                 onMouseEnter={() => setFocused(bar)}
                 onFocus={() => setFocused(bar)}
                 onClick={() => setFocused(bar)}
-                className="grid w-full grid-cols-[minmax(4ch,12ch)_1fr_auto] items-center gap-3 text-left text-sm hover:text-accent"
+                className="grid min-h-11 w-full grid-cols-[minmax(4ch,12ch)_1fr_auto] items-center gap-3 text-left text-sm hover:text-accent lg:min-h-6"
               >
                 <span className="truncate text-muted">{bar.label}</span>
                 <span aria-hidden="true" className="h-4 border border-line">
