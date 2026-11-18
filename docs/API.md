@@ -60,20 +60,23 @@ type SaveAnswerResult =
 
 `saveAnswer` rejects: round not open, no attempt, already submitted, past deadline + 15 s
 (and finalizes), unknown question, option not in the question, text over 300 characters,
-and in sequential rounds any question other than the current clue.
+in sequential rounds any question other than the current clue, and (when the round is
+limited to the previous round's top N) a participant outside the selection. `unlockRound`
+refuses such a participant too.
 
 ## Admin actions
 
 All require an admin session.
 
-| File                                        | Actions                                                                                                                                                                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `app/admin/login/actions.ts`                | `adminLogin` (throttled; non-admin accounts refused)                                                                                                                                                                           |
-| `app/admin/(panel)/actions.ts`              | `adminLogout`                                                                                                                                                                                                                  |
-| `app/admin/(panel)/rounds/actions.ts`       | `updateRound` (closing submits open attempts), `saveQuestion` (create or edit, re-scores), `deleteQuestion`, `moveQuestion`, `createAccessKey`, `rotateAccessKey`, `renameAccessKey`, `setAccessKeyRevoked`, `deleteAccessKey` |
-| `app/admin/(panel)/participants/actions.ts` | `addParticipant`, `importParticipants` (all-or-nothing on format errors; existing USNs skipped), `updateParticipant`, `endParticipantSessions`, `resetAttempt`, `deleteParticipant`                                            |
-| `app/admin/(panel)/content/actions.ts`      | `updateEventInfo`, `savePerson` (optional photo upload), `deletePerson`                                                                                                                                                        |
-| `app/admin/(panel)/messages/actions.ts`     | `deleteMessage`                                                                                                                                                                                                                |
+| File                                        | Actions                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/admin/login/actions.ts`                | `adminLogin` (throttled; non-admin accounts refused)                                                                                                                                                                                                                                                                                             |
+| `app/admin/(panel)/actions.ts`              | `adminLogout`                                                                                                                                                                                                                                                                                                                                    |
+| `app/admin/(panel)/rounds/actions.ts`       | `updateRound` (closing submits open attempts), `setQualifiers` (top N of the previous round, which must be closed; ties on place N included), `clearQualifiers`, `saveQuestion` (create or edit, re-scores), `deleteQuestion`, `moveQuestion`, `createAccessKey`, `rotateAccessKey`, `renameAccessKey`, `setAccessKeyRevoked`, `deleteAccessKey` |
+| `app/admin/(panel)/participants/actions.ts` | `addParticipant`, `importParticipants` (all-or-nothing on format errors; existing USNs skipped), `updateParticipant`, `endParticipantSessions`, `resetAttempt`, `deleteParticipant`                                                                                                                                                              |
+| `app/admin/(panel)/content/actions.ts`      | `updateEventInfo`, `savePerson` (optional photo upload), `deletePerson`                                                                                                                                                                                                                                                                          |
+| `app/admin/(panel)/messages/actions.ts`     | `deleteMessage`                                                                                                                                                                                                                                                                                                                                  |
+| `app/admin/(panel)/admins/actions.ts`       | `addAdmin` (name, email, password typed twice), `setAdminPassword` (ends their sessions), `removeAdmin`. The last two refuse the signed-in admin and admins created with `pnpm admin:create`.                                                                                                                                                    |
 
 ## Public action
 

@@ -207,9 +207,9 @@ step 3.4 again **before** the new deployment goes live.
 
 ## 4. Admin accounts
 
-There is no default admin and no admin sign-up page. Admins are created from the command
-line with `pnpm admin:create`, which writes directly to the database using Better Auth's
-password hashing.
+There is no default admin and no admin sign-up page. The first admin is created from the
+command line with `pnpm admin:create`, which writes directly to the database using Better
+Auth's password hashing. After that, admins can add each other in the panel.
 
 ### Create an admin
 
@@ -236,16 +236,23 @@ Sign in at `/admin/login` with that email and password.
 
 ### Add more admins
 
-Run the same command with a different email. Every admin has full access.
+In the panel, open **Admins** and fill in **Add admin**: name, email and a password (12+
+characters, typed twice). Give the password to the person in person. They sign in at
+`/admin/login`. Every admin has full access, including the Admins page.
+
+`pnpm admin:create` with a different email also works; admins created that way are
+"terminal only" (see Rules).
 
 ### Reset a forgotten password
 
-Run the command again with the **same** email. It sets the new password and signs that
-admin out everywhere.
+- Added in the panel: another admin uses **Set password** on their entry. It signs them out
+  everywhere.
+- Created with `pnpm admin:create`: run the command again with the **same** email.
 
 ### Remove an admin
 
-There is no command for this. Delete the user in **Neon > SQL Editor**:
+- Added in the panel: another admin uses **Remove admin** on their entry.
+- Created with `pnpm admin:create`: delete the user in **Neon > SQL Editor**:
 
 ```sql
 DELETE FROM auth_users WHERE email = 'person@ajiet.edu.in' AND role = 'admin';
@@ -256,6 +263,8 @@ Their password and sessions are removed with it.
 ### Rules
 
 - An email that belongs to a participant cannot become an admin.
+- Admins created with `pnpm admin:create` cannot be changed or removed from the panel.
+  Nobody can change or remove their own account from the panel.
 - Admin login is limited to 5 failed attempts per email per 15 minutes.
 - Sessions last 12 hours. **Sign out** in the admin panel ends the session at once.
 - Share passwords privately, never in chat groups.
@@ -270,9 +279,14 @@ Their password and sessions are removed with it.
    members, number of winner places.
 2. **Participants**: import the roster (`USN,Full Name`, one per line, paste from a
    spreadsheet).
-3. **Rounds**: add questions; set time limits; create one access key per round. Keep
-   every round in **Draft**.
-4. Do a rehearsal with two or three people on the real site.
+3. **Questions**: put the bank in `private/question-bank.json` (gitignored), check it with
+   `pnpm questions:import --dry-run`, then load it with
+   `DATABASE_URL="<prod url>" pnpm questions:import`. A round that already has questions is
+   refused; `--replace` swaps them while the round is in Draft and nobody has unlocked it.
+4. **Rounds**: check time limits (round 1: 30 minutes); create the access keys from
+   `private/access-keys.xlsx` (label in **Label**, key in **Custom key**). Keep every round
+   in **Draft**.
+5. Do a rehearsal with two or three people on the real site.
 
 **During the event**
 
@@ -280,9 +294,12 @@ Their password and sessions are removed with it.
 2. Watch the **Dashboard**.
 3. Set the round to **Closed** when time is up. Unfinished attempts are submitted at that
    moment.
-4. A participant whose device failed can log in on another device. To let them start a
+4. **Who advances**: open the next round's page, read the ranking under **Qualification**,
+   enter how many advance and click **Select top N** (ties on the last place all advance).
+   Do this before opening the next round. **Open to everyone** removes the limit.
+5. A participant whose device failed can log in on another device. To let them start a
    round over, open them in **Participants** and use **Reset this round**.
-5. If a key leaks, **Revoke** it (or **New value**) and announce the new one. Rounds
+6. If a key leaks, **Revoke** it (or **New value**) and announce the new one. Rounds
    already unlocked stay unlocked.
 
 **After the event**

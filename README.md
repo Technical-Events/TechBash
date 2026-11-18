@@ -36,26 +36,28 @@ roster, results, winners and site content.
   active session per USN.
 - Three rounds, each needing its own access key:
 
-  | Round | Name               | Format                                                      |
-  | ----- | ------------------ | ----------------------------------------------------------- |
-  | 1     | Quiz               | All questions visible, answers saved as you go, submit once |
-  | 2     | Tech Treasure Hunt | One clue at a time; a correct answer unlocks the next       |
-  | 3     | Bug Hunt           | Code snippets with line numbers; pick or type the answer    |
+  | Round | Name               | Format                                                                   |
+  | ----- | ------------------ | ------------------------------------------------------------------------ |
+  | 1     | Quiz               | 30 questions from every engineering branch, 30 minutes, submit once      |
+  | 2     | Tech Treasure Hunt | 15 clues one at a time; check an option, retry until right; fastest wins |
+  | 3     | Bug Hunt           | Code snippets with line numbers; pick or type the answer                 |
 
 - Optional time limit per round with a countdown; the server submits the round at the
   deadline.
 - Answer keys never reach the browser.
+- Rounds 2 and 3 can be limited to the previous round's top N (set by an admin).
 
 **Admin panel** (`/admin`)
 
-| Section      | What it does                                                                                  |
-| ------------ | --------------------------------------------------------------------------------------------- |
-| Dashboard    | Live counts, first finisher, per-round statistics, interactive charts, top five               |
-| Rounds       | Settings (draft / open / closed, time limit), questions, access keys (create, rotate, revoke) |
-| Participants | Add, bulk import, edit, end sessions, reset a round, delete; every answer per participant     |
-| Results      | Full ranking with tie-breaks, winner list, first finisher, CSV exports                        |
-| Content      | Event details, technical lead, faculty and team profiles with photo upload                    |
-| Messages     | Contact form submissions                                                                      |
+| Section      | What it does                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Dashboard    | Live counts, first finisher, per-round statistics, interactive charts, top five           |
+| Rounds       | Settings (draft / open / closed, time limit), top N who advance, questions, access keys   |
+| Participants | Add, bulk import, edit, end sessions, reset a round, delete; every answer per participant |
+| Results      | Full ranking with tie-breaks, winner list, first finisher, CSV exports                    |
+| Content      | Event details, technical lead, faculty and team profiles with photo upload                |
+| Messages     | Contact form submissions                                                                  |
+| Admins       | Add admins (name, email, password), set a new password, remove                            |
 
 **Ranking:** higher total score, then more rounds submitted, then less total time, then
 earlier final submission. The **first finisher** is whoever submitted all three rounds
@@ -129,33 +131,39 @@ Step-by-step guide with checks and a custom-domain setup:
 
 ## Admin accounts
 
-There is **no default admin and no sign-up page**. Admins are created from the terminal:
+There is **no default admin and no sign-up page**. The first admin is created from the
+terminal; after that, admins add each other in the panel (**Admins**).
 
-| Task              | Command / action                                                 |
-| ----------------- | ---------------------------------------------------------------- |
-| Create an admin   | `pnpm admin:create you@ajiet.edu.in "Your Name"`                 |
-| Add another admin | Same command, different email                                    |
-| Reset a password  | Same command, same email (also signs that admin out everywhere)  |
-| Target production | Prefix with `DATABASE_URL="<prod url>"`                          |
-| Remove an admin   | SQL in Neon, see [the guide](docs/DEPLOYMENT.md#remove-an-admin) |
+| Task                   | Command / action                                                   |
+| ---------------------- | ------------------------------------------------------------------ |
+| Create the first admin | `pnpm admin:create you@ajiet.edu.in "Your Name"`                   |
+| Add another admin      | Panel: **Admins > Add admin** (name, email, a password you choose) |
+| Reset a panel admin    | Panel: **Admins > Set password** (signs them out everywhere)       |
+| Remove a panel admin   | Panel: **Admins > Remove admin**                                   |
+| Reset a terminal admin | `pnpm admin:create` with the same email                            |
+| Target production      | Prefix the command with `DATABASE_URL="<prod url>"`                |
+
+Admins created with `pnpm admin:create` cannot be changed or removed from the panel, and
+nobody can change or remove their own account there.
 
 Details: [docs/DEPLOYMENT.md, section 4](docs/DEPLOYMENT.md#4-admin-accounts).
 
 ## Commands
 
-| Command             | What it does                                 |
-| ------------------- | -------------------------------------------- |
-| `pnpm dev`          | Development server                           |
-| `pnpm build`        | Production build                             |
-| `pnpm start`        | Serve the production build                   |
-| `pnpm typecheck`    | Type check                                   |
-| `pnpm lint`         | ESLint                                       |
-| `pnpm test`         | Unit tests                                   |
-| `pnpm format`       | Prettier                                     |
-| `pnpm db:generate`  | Create a migration from `lib/db/schema.ts`   |
-| `pnpm db:migrate`   | Apply migrations to `DATABASE_URL`           |
-| `pnpm db:studio`    | Browse the database                          |
-| `pnpm admin:create` | Create an admin or reset an admin's password |
+| Command                 | What it does                                                                |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev`              | Development server                                                          |
+| `pnpm build`            | Production build                                                            |
+| `pnpm start`            | Serve the production build                                                  |
+| `pnpm typecheck`        | Type check                                                                  |
+| `pnpm lint`             | ESLint                                                                      |
+| `pnpm test`             | Unit tests                                                                  |
+| `pnpm format`           | Prettier                                                                    |
+| `pnpm db:generate`      | Create a migration from `lib/db/schema.ts`                                  |
+| `pnpm db:migrate`       | Apply migrations to `DATABASE_URL`                                          |
+| `pnpm db:studio`        | Browse the database                                                         |
+| `pnpm admin:create`     | Create an admin or reset an admin's password                                |
+| `pnpm questions:import` | Load questions from `private/question-bank.json` (`--dry-run`, `--replace`) |
 
 Before committing: `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
 
@@ -173,29 +181,32 @@ lib/
   security/         access-key hashing, throttling
   validations/      Zod schemas
 drizzle/          SQL migrations
-scripts/          create-admin.ts
+scripts/          create-admin.ts, import-questions.ts
+private/          gitignored: question-bank.json + .xlsx (answer keys), access-keys.xlsx
 tests/            unit tests
 docs/             documentation
 ```
 
 ## Routes
 
-| Route                  | Access      | Purpose                                                     |
-| ---------------------- | ----------- | ----------------------------------------------------------- |
-| `/`                    | Public      | Home                                                        |
-| `/contact`             | Public      | Contact Us                                                  |
-| `/test`                | Public      | Participant login and round dashboard                       |
-| `/test/round/[number]` | Participant | Take a round                                                |
-| `/admin/login`         | Public      | Admin sign-in                                               |
-| `/admin/...`           | Admin       | Dashboard, rounds, participants, results, content, messages |
-| `/admin/export/[kind]` | Admin       | CSV: `results`, `participants`, `answers`                   |
-| `/api/health`          | Public      | Health check                                                |
+| Route                  | Access      | Purpose                                                             |
+| ---------------------- | ----------- | ------------------------------------------------------------------- |
+| `/`                    | Public      | Home                                                                |
+| `/contact`             | Public      | Contact Us                                                          |
+| `/test`                | Public      | Participant login and round dashboard                               |
+| `/test/round/[number]` | Participant | Take a round                                                        |
+| `/admin/login`         | Public      | Admin sign-in                                                       |
+| `/admin/...`           | Admin       | Dashboard, rounds, participants, results, content, messages, admins |
+| `/admin/export/[kind]` | Admin       | CSV: `results`, `participants`, `answers`                           |
+| `/api/health`          | Public      | Health check                                                        |
 
 ## Status
 
 - Verified end to end on a local PostgreSQL database: login, rounds, timers, throttling,
   admin panel, results and exports.
 - Not yet deployed to Vercel or run against a real Neon project.
+- Added 2026-11-18 and not yet run against any database: qualification (top N), the
+  Admins page, `pnpm questions:import`, migrations `0004` and `0005`.
 - Photo upload is implemented but untested (needs a Blob token).
 
 ## Known limitations

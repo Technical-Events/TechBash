@@ -46,7 +46,7 @@ app/                       routes; each route's Server Actions live in its own a
   test/                      participant login, round dashboard; test/round/[number]
   admin/login/               admin sign-in
   admin/(panel)/             admin pages behind requireAdmin(): dashboard, rounds,
-                             participants, results, content, messages
+                             participants, results, content, messages, admins
   admin/export/[kind]/       CSV exports (Route Handler)
   api/health/route.ts        liveness Route Handler
 components/
@@ -60,7 +60,8 @@ lib/
   rounds/ participants/ results/ content/   pure logic (tests import these)
   security/                  access-key HMAC, throttling (server-only)
   validations/               Zod schemas and the ActionState type
-scripts/create-admin.ts      creates or resets an admin account
+scripts/create-admin.ts      creates or resets an admin
+scripts/import-questions.ts  loads a question bank from private/ (gitignored) account
 drizzle/                     SQL migrations (generated; 0003 is a custom seed)
 tests/                       node:test unit tests
 docs/                        project documentation

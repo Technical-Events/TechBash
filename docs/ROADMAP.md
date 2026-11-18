@@ -10,6 +10,11 @@
   exports, content and photos, messages), editable Home and Contact Us. Verified end to
   end on a local database.
 
+- **2026-11-18**: 30-question all-branch quiz (30 minutes) and 15-clue multiple-choice
+  treasure hunt, loaded by `pnpm questions:import` from a gitignored bank; top-N
+  qualification between rounds; admin management in the panel; access-key sheet.
+  Typecheck, lint, tests and build pass; not yet exercised against a database.
+
 ## Next (confirmed)
 
 - **Go live**: create the Neon project, run `pnpm db:migrate` and `pnpm admin:create`,
@@ -23,6 +28,5 @@
 - Committed Playwright end-to-end suite and CI running typecheck, lint, tests, build.
 - Rate limiting on the contact form.
 - Participant passwords or one-time codes if the event is ever run remotely.
-- Admin management of other admins in the UI (today: `pnpm admin:create`).
 - Multiple-answer questions; per-question time limits; negative marking.
 - Public leaderboard page after the event.

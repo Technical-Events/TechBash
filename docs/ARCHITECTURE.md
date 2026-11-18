@@ -41,6 +41,7 @@ app/
   admin/(panel)/results/          ranking, winners, exports
   admin/(panel)/content/          event info, people + actions.ts
   admin/(panel)/messages/         contact submissions + actions.ts
+  admin/(panel)/admins/           admin accounts + actions.ts
   admin/export/[kind]/route.ts    CSV exports
   api/health/route.ts             liveness
   error.tsx, not-found.tsx
@@ -65,7 +66,7 @@ Better Auth (`lib/auth/server.ts`) with the Drizzle adapter on the same Neon dat
 
 | Who         | How they sign in                                                                                                                                                                                       |
 | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Admin       | Email + password (`emailAndPassword`, sign-up disabled). Created by `pnpm admin:create`.                                                                                                               |
+| Admin       | Email + password (`emailAndPassword`, sign-up disabled). The first by `pnpm admin:create`, more on the panel's Admins page (`auth_users.added_by` set).                                                |
 | Participant | Full name + USN via the `participant-sign-in` plugin: checks the roster, creates the Better Auth user on first login, deletes the user's other sessions, creates a session and sets the signed cookie. |
 
 - The Better Auth HTTP handler is **not mounted**. Server Actions call `auth.api.*`
@@ -108,6 +109,14 @@ sequenceDiagram
   Non-sequential rounds never reveal correctness. Scores show to participants only when
   an admin enables it.
 - **Re-scoring**: saving a question re-evaluates every stored answer to it.
+- **Qualification**: an admin can limit round 2 or 3 to the previous round's top N once
+  that round is closed. `rankRound()` ranks the previous round alone (score, time taken,
+  submission time); `selectQualifiers()` keeps places 1..N, ties on place N included. The
+  list is a snapshot in `round_qualifiers` (`rounds.qualifier_limit` = N). `unlockRound`,
+  `saveAnswer` and the round page refuse anyone outside it; `isQualified()` is the check.
+- **Questions in bulk**: `pnpm questions:import` loads a JSON bank from the gitignored
+  `private/` folder (format in `scripts/import-questions.ts`, parsing in
+  `lib/rounds/question-bank.ts`), so answer keys never enter Git.
 
 ## Results
 
