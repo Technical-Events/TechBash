@@ -38,7 +38,11 @@ DATABASE_URL=postgresql://neondb_owner:abc123@ep-cool-name-123456-pooler.ap-sout
   [3.4](#34-create-the-tables).
 - Without it, public pages still render with default content, but login, rounds and the
   admin panel are unavailable.
-- Used by: the app (`lib/db/index.ts`), `pnpm db:migrate`, `pnpm admin:create`.
+- Used by: the app (`lib/db/index.ts`), `pnpm db:migrate`, `pnpm admin:create`,
+  `pnpm questions:import`.
+- In production the **app** connects as a restricted role that can read and write data
+  but cannot change tables; migrations use the owner role. See
+  [3.5](#35-create-the-apps-database-role).
 
 ### `BETTER_AUTH_SECRET`
 
@@ -155,7 +159,62 @@ DATABASE_URL="<production connection string>" pnpm db:migrate
 This creates every table and seeds the three rounds (as Draft), the event details and the
 two faculty coordinators. Running it again later only applies new migrations.
 
-### 3.5 Import the project in Vercel
+Migrations always use the **owner** connection string (the one Neon shows by default,
+user `neondb_owner`). The app itself uses the role from 3.5.
+
+### 3.5 Create the app's database role
+
+The owner role can also drop and alter tables. The website never needs that, so it gets
+its own role that can only read and write rows. If the app is ever tricked into running
+something unexpected, the tables themselves stay safe.
+
+1. Make a password on your machine. Hex only, so it needs no escaping in a URL:
+
+   ```bash
+   openssl rand -hex 24
+   ```
+
+2. In **Neon > your project > SQL Editor**, on the production branch and the `neondb`
+   database, run (replace the password; if your owner role or database has another name,
+   use that):
+
+   ```sql
+   -- Created with SQL, so it is NOT a member of neon_superuser.
+   CREATE ROLE techbash_app WITH LOGIN PASSWORD 'PASTE_THE_HEX_PASSWORD';
+
+   GRANT CONNECT ON DATABASE neondb TO techbash_app;
+   GRANT USAGE ON SCHEMA public TO techbash_app;
+   GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO techbash_app;
+
+   -- Same rights on tables that later migrations create.
+   ALTER DEFAULT PRIVILEGES FOR ROLE neondb_owner IN SCHEMA public
+     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO techbash_app;
+   ```
+
+   Do not create this role in the Neon console's **Roles** page: roles made there join
+   `neon_superuser` and get far more rights.
+
+3. Build the app's connection string from the owner's pooled string: replace the user
+   and password, keep the host and everything after it:
+
+   ```env
+   postgresql://techbash_app:<hex password>@ep-...-pooler.<region>.aws.neon.tech/neondb?sslmode=require
+   ```
+
+4. Check it in the SQL Editor (switch the role to `techbash_app` if offered), or from your
+   machine. Reading works, changing a table does not:
+
+   ```sql
+   SELECT count(*) FROM rounds;               -- works
+   ALTER TABLE rounds ADD COLUMN x int;       -- ERROR: must be owner of table rounds
+   ```
+
+Use this string as `DATABASE_URL` in Vercel (3.6). `pnpm admin:create` and
+`pnpm questions:import` only read and write rows, so they work with either string;
+`pnpm db:migrate` needs the owner string. Repeat the steps on the Neon `preview` branch if
+you use one.
+
+### 3.6 Import the project in Vercel
 
 1. <https://vercel.com/new> > import the GitHub repository.
 2. Framework preset: **Next.js** (auto-detected). Leave build and output settings at their
@@ -163,19 +222,19 @@ two faculty coordinators. Running it again later only applies new migrations.
 3. **Settings > General > Node.js Version**: 22.x or newer.
 4. **Environment Variables** (Production):
 
-   | Name                    | Value                                                                       |
-   | ----------------------- | --------------------------------------------------------------------------- |
-   | `DATABASE_URL`          | production pooled connection string (skip if the Neon integration added it) |
-   | `BETTER_AUTH_SECRET`    | a new `openssl rand -base64 32` value                                       |
-   | `BETTER_AUTH_URL`       | `https://<your-project>.vercel.app` or your custom domain                   |
-   | `BLOB_READ_WRITE_TOKEN` | added automatically by step 3.3                                             |
+   | Name                    | Value                                                     |
+   | ----------------------- | --------------------------------------------------------- |
+   | `DATABASE_URL`          | the `techbash_app` pooled connection string from 3.5      |
+   | `BETTER_AUTH_SECRET`    | a new `openssl rand -base64 32` value                     |
+   | `BETTER_AUTH_URL`       | `https://<your-project>.vercel.app` or your custom domain |
+   | `BLOB_READ_WRITE_TOKEN` | added automatically by step 3.3                           |
 
    For **Preview**, point `DATABASE_URL` at the Neon `preview` branch, never at
    production.
 
 5. **Deploy**.
 
-### 3.6 Create the first admin
+### 3.7 Create the first admin
 
 ```bash
 DATABASE_URL="<production connection string>" pnpm admin:create you@ajiet.edu.in "Your Name"
@@ -183,7 +242,7 @@ DATABASE_URL="<production connection string>" pnpm admin:create you@ajiet.edu.in
 
 Then sign in at `https://<your-domain>/admin/login`. Details in [section 4](#4-admin-accounts).
 
-### 3.7 Check the deployment
+### 3.8 Check the deployment
 
 1. `https://<your-domain>/api/health` returns `{"status":"ok",...}`.
 2. Home and Contact Us show the event details and faculty.
@@ -265,7 +324,9 @@ Their password and sessions are removed with it.
 - An email that belongs to a participant cannot become an admin.
 - Admins created with `pnpm admin:create` cannot be changed or removed from the panel.
   Nobody can change or remove their own account from the panel.
-- Admin login is limited to 5 failed attempts per email per 15 minutes.
+- Admin login allows 5 failed attempts per email from one network (IP) per 15 minutes,
+  and 50 per email from all networks together. Someone on another network cannot lock you
+  out; someone on the same venue network still can, for 15 minutes.
 - Sessions last 12 hours. **Sign out** in the admin panel ends the session at once.
 - Share passwords privately, never in chat groups.
 
