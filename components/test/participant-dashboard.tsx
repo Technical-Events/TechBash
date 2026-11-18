@@ -38,6 +38,15 @@ function RoundState({
     );
   }
 
+  if (!round.qualified) {
+    return (
+      <p className="text-sm text-muted">
+        # Open only to the top {round.qualifierLimit} of round{" "}
+        {round.number - 1}. You did not qualify for this round.
+      </p>
+    );
+  }
+
   if (attempt && round.status === "open") {
     return (
       <div className="space-y-3 text-sm">
@@ -143,6 +152,12 @@ export function ParticipantDashboard({
                 &gt; {round.questionCount}{" "}
                 {round.sequential ? "clues" : "questions"}
               </p>
+              {round.qualifierLimit !== null && round.qualified && (
+                <p className="mt-1 text-sm text-accent">
+                  OK You qualified (top {round.qualifierLimit} of round{" "}
+                  {round.number - 1})
+                </p>
+              )}
               <div className="mt-5 flex-1 border-t border-dashed border-line pt-4">
                 <RoundState round={round} resultsPublished={resultsPublished} />
               </div>
