@@ -135,10 +135,13 @@ when a decision changes.
 
 - **Status**: Accepted (2026-10-22)
 - **Decision**: Keys are normalized (case, spaces, dashes ignored) and stored as
-  HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`, plus a four-character hint. The admin sees
-  the key once and can rotate it.
+  HMAC-SHA256 keyed with `BETTER_AUTH_SECRET`, plus a two-character hint. The admin sees
+  the key once and can rotate it. Generated keys are 6 digits (100000 to 999999, changed
+  2026-11-18 so they are easy to announce); custom keys may still use 6 to 64 letters,
+  digits, spaces or dashes.
 - **Consequences**: A database leak does not reveal keys. Rotating the secret invalidates
-  every key.
+  every key. A 6-digit key has 900,000 values; the per-participant throttle (8 wrong keys
+  per 10 minutes) is what keeps guessing impractical.
 
 ## ADR-013 — Database-backed throttling
 
@@ -166,3 +169,41 @@ when a decision changes.
   with design tokens, with dataset tabs and a hover/focus readout.
 - **Consequences**: Charts match the ASCII identity, stay accessible and add no
   dependency. Only bar charts exist.
+
+## ADR-016 — Qualification as a stored snapshot of the previous round's top N
+
+- **Status**: Accepted (2026-11-18)
+- **Context**: The number of registrations is unknown until the event, so the number who
+  advance must be chosen on the day.
+- **Decision**: An admin enters N on round 2 or 3 once the previous round is closed. The
+  previous round is ranked on its own (score, time taken, submission time) and places
+  1..N are written to `round_qualifiers`; a tie on place N advances everyone sharing it.
+  `rounds.qualifier_limit` holds N; null keeps the round open to all. Unlock, answer saves
+  and the round page check membership.
+- **Consequences**: The list does not move after selection, even if answers are re-scored;
+  selecting again replaces it. Overall ranking and winners still sum every round.
+
+## ADR-017 — Question bank kept out of Git
+
+- **Status**: Accepted (2026-11-18)
+- **Context**: Anyone with repository access could read answer keys committed in a seed
+  migration.
+- **Decision**: Questions live in a JSON file under the gitignored `private/` folder.
+  `pnpm questions:import` validates it with the same `questionSchema` as the admin form and
+  writes each round in one batch. It refuses rounds that already have questions unless
+  `--replace`, and refuses `--replace` once a round is out of Draft or has attempts. The
+  access-key sheet (`private/access-keys.xlsx`) and a readable answer-key sheet
+  (`private/question-bank.xlsx`, generated from the JSON) are kept there too.
+- **Consequences**: The bank must be shared and backed up outside Git by the tech team.
+  `lib/validations/rounds.ts` imports constants by relative path so the script can use it.
+
+## ADR-018 — Admins manage admins in the panel
+
+- **Status**: Accepted (2026-11-18)
+- **Decision**: The Admins page adds an admin with a name, email and a password the adding
+  admin types (no email service exists). `auth_users.added_by` records who added them.
+  Admins can set a new password for, or remove, other panel-added admins. Admins created
+  with `pnpm admin:create` (null `added_by`) and the signed-in admin's own account cannot
+  be changed from the panel.
+- **Consequences**: The terminal-created owner cannot be locked out by another admin. The
+  password travels from admin to admin by hand.
