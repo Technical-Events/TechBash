@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { TableScroller } from "./table-scroller";
 
 /**
  * Bordered data table. Scrolls inside its own box so wide tables never
- * scroll the page. `caption` names the table for screen readers.
+ * scroll the page, with a hint when it does. `caption` names the table for
+ * screen readers.
  */
 export function Table({
   caption,
@@ -17,12 +18,7 @@ export function Table({
   className?: string;
 }) {
   return (
-    <div
-      className={cn("overflow-x-auto border border-line", className)}
-      tabIndex={0}
-      role="region"
-      aria-label={caption}
-    >
+    <TableScroller caption={caption} className={className}>
       <table className="w-full border-collapse text-left text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-surface text-xs tracking-[0.08em] text-muted uppercase">
@@ -42,7 +38,7 @@ export function Table({
           {children}
         </tbody>
       </table>
-    </div>
+    </TableScroller>
   );
 }
 
