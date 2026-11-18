@@ -121,14 +121,18 @@ function QuestionBody({
           >
             <code>
               {question.code.split("\n").map((line, index) => (
-                <span key={index} className="block">
+                // Long lines wrap (phones) under their own number, so no
+                // part of the code hides behind a sideways scroll.
+                <span key={index} className="grid grid-cols-[3ch_1fr] gap-x-3">
                   <span
                     aria-hidden="true"
-                    className="mr-3 inline-block w-[3ch] text-right text-muted select-none"
+                    className="text-right text-muted select-none"
                   >
                     {index + 1}
                   </span>
-                  {line || " "}
+                  <span className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                    {line || " "}
+                  </span>
                 </span>
               ))}
             </code>
