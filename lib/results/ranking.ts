@@ -127,3 +127,32 @@ export function selectWinners(
 ): RankedParticipant[] {
   return ranked.filter((entry) => entry.totalScore > 0 && entry.rank <= places);
 }
+
+/**
+ * One round ranked on its own, for choosing who advances. Only
+ * participants who submitted that round are ranked, by its score, then
+ * time taken, then submission time. Equal on all three: shared rank.
+ */
+export function rankRound(
+  outcomes: ParticipantOutcome[],
+  roundNumber: number,
+): RankedParticipant[] {
+  const entries = outcomes.flatMap((outcome) => {
+    const rounds = outcome.rounds.filter(
+      (round) => round.roundNumber === roundNumber && round.submittedAt,
+    );
+    return rounds.length ? [{ ...outcome, rounds }] : [];
+  });
+  return rankParticipants(entries, 1);
+}
+
+/**
+ * The top `count` places of a ranking. A tie on the last place includes
+ * everyone sharing it, so the result can be longer than `count`.
+ */
+export function selectQualifiers(
+  ranked: RankedParticipant[],
+  count: number,
+): RankedParticipant[] {
+  return ranked.filter((entry) => entry.rank <= count);
+}

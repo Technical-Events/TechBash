@@ -3,6 +3,8 @@ import { test } from "node:test";
 import {
   firstFinisher,
   rankParticipants,
+  rankRound,
+  selectQualifiers,
   selectWinners,
   type ParticipantOutcome,
 } from "../lib/results/ranking.ts";
@@ -177,4 +179,75 @@ test("scoreHistogram covers 0..max with every score counted once", async () => {
   assert.deepEqual(scoreHistogram([0, 0], 0), [{ label: "0", count: 2 }]);
   assert.equal(percent(1, 3), 33);
   assert.equal(percent(1, 0), 0);
+});
+
+test("rankRound ranks one round only, skipping unsubmitted attempts", () => {
+  const ranked = rankRound(
+    [
+      // Strong round 2 must not lift A in the round 1 ranking.
+      person("A", [
+        [2, 0, 10],
+        [50, 20, 30],
+      ]),
+      person("B", [[5, 0, 20]]),
+      person("C", [[5, 0, 15]]),
+      person("D", [[9, 0, null]]),
+      person("E", []),
+    ],
+    1,
+  );
+  assert.deepEqual(
+    ranked.map((r) => [r.usn, r.rank, r.totalScore]),
+    [
+      ["C", 1, 5],
+      ["B", 2, 5],
+      ["A", 3, 2],
+    ],
+  );
+  assert.equal(ranked[2].rounds.length, 1);
+});
+
+test("selectQualifiers takes the top N and keeps a tie on the last place", () => {
+  const ranked = rankRound(
+    [
+      person("A", [[9, 0, 10]]),
+      person("B", [[7, 0, 10]]),
+      person("C", [[7, 0, 10]]),
+      person("D", [[1, 0, 10]]),
+    ],
+    1,
+  );
+  assert.deepEqual(
+    selectQualifiers(ranked, 1).map((r) => r.usn),
+    ["A"],
+  );
+  assert.deepEqual(
+    selectQualifiers(ranked, 2).map((r) => r.usn),
+    ["A", "B", "C"],
+  );
+  assert.equal(selectQualifiers(ranked, 3).length, 3);
+  assert.equal(selectQualifiers(ranked, 10).length, 4);
+});
+
+test("rankRound breaks equal scores by time taken (treasure hunt: fastest wins)", () => {
+  const ranked = rankRound(
+    [
+      person("SLOW", [
+        [0, 0, 1],
+        [15, 0, 25],
+      ]),
+      person("FAST", [
+        [0, 0, 1],
+        [15, 5, 12],
+      ]),
+    ],
+    2,
+  );
+  assert.deepEqual(
+    ranked.map((r) => [r.usn, r.rank]),
+    [
+      ["FAST", 1],
+      ["SLOW", 2],
+    ],
+  );
 });
