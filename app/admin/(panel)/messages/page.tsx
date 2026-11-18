@@ -33,7 +33,7 @@ export default async function MessagesPage() {
           <li key={message.id}>
             <Panel title={formatDateTime(message.createdAt)}>
               <h2 className="text-base normal-case">{message.subject}</h2>
-              <p className="mt-1 text-sm text-muted">
+              <p className="mt-1 text-sm break-all text-muted">
                 {message.name} &lt;
                 <a
                   href={`mailto:${message.email}`}
