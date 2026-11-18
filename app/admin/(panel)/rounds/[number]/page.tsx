@@ -10,6 +10,7 @@ import {
   setAccessKeyRevoked,
   updateRound,
 } from "@/app/admin/(panel)/rounds/actions";
+import { QualificationSection } from "@/components/admin/qualification-section";
 import { RoundStatusBadge } from "@/components/rounds/round-badges";
 import { ActionForm } from "@/components/ui/action-form";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,10 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { EmptyRow, Table } from "@/components/ui/table";
 import { requireAdminDb } from "@/lib/auth/session";
 import { getRoundQuestions } from "@/lib/db/queries/attempts";
-import { accessKeys, rounds } from "@/lib/db/schema";
+import { getResultsData } from "@/lib/db/queries/results";
+import { accessKeys, roundQualifiers, rounds } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/format";
+import { rankRound } from "@/lib/results/ranking";
 import { roundStatuses } from "@/lib/rounds/constants";
 import { roundNumberSchema } from "@/lib/validations/rounds";
 
@@ -59,14 +62,21 @@ export default async function AdminRoundPage(
     .from(rounds)
     .where(eq(rounds.number, number.data));
   if (!round) notFound();
-  const [list, keys] = await Promise.all([
+  const [list, keys, results, qualifierRows] = await Promise.all([
     getRoundQuestions(db, round.id),
     db
       .select()
       .from(accessKeys)
       .where(eq(accessKeys.roundId, round.id))
       .orderBy(asc(accessKeys.createdAt)),
+    // Round 1 has no previous round to qualify from.
+    round.number > 1 ? getResultsData(db) : null,
+    db
+      .select({ participantId: roundQualifiers.participantId })
+      .from(roundQualifiers)
+      .where(eq(roundQualifiers.roundId, round.id)),
   ]);
+  const qualifiedIds = new Set(qualifierRows.map((row) => row.participantId));
 
   return (
     <>
@@ -138,6 +148,26 @@ export default async function AdminRoundPage(
             </ActionForm>
           </Panel>
         </section>
+
+        {results && (
+          <QualificationSection
+            round={round}
+            previousStatus={
+              results.rounds.find((r) => r.number === round.number - 1)?.status
+            }
+            ranking={rankRound(results.outcomes, round.number - 1)}
+            qualifiedIds={qualifiedIds}
+            outsiders={
+              round.qualifierLimit === null
+                ? 0
+                : results.attempts.filter(
+                    (a) =>
+                      a.roundId === round.id &&
+                      !qualifiedIds.has(a.participantId),
+                  ).length
+            }
+          />
+        )}
 
         <section aria-labelledby="keys-heading">
           <SectionHeading
