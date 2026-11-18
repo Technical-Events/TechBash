@@ -132,14 +132,22 @@ every round. Dashboard, results page and exports all use the same data.
 - Browser input is untrusted: every action validates with Zod (`lib/validations/`).
 - Throttling (`lib/security/throttle.ts`, table `throttle_events`): participant login 10
   failures / 15 min per USN and 300 per IP (a venue shares one NAT IP); admin login 5 per
-  email and 30 per IP; access keys 8 per participant and round per 10 min. IP comes from
+  email and IP, 50 per email, 30 per IP; access keys 8 per participant and round per
+  10 min; contact form 10 stored messages per IP per hour. `beginAttempt()` writes the
+  attempt before counting, so parallel requests cannot slip past a limit together;
+  `releaseAttempt()` removes it again when the outcome was not a failure. IP comes from
   `x-forwarded-for`, which Vercel sets.
 - Access keys are compared as HMACs; the plaintext is shown once to the admin.
 - Photo uploads: 2 MB limit, type sniffed from the file bytes (JPEG, PNG, WebP), stored
   in Vercel Blob under `people/`; `next/image` only allows that host and path.
 - CSV exports neutralize spreadsheet formulas.
-- Response headers: `X-Content-Type-Options`, `X-Frame-Options: DENY`,
-  `Referrer-Policy`, `Permissions-Policy` (`next.config.ts`).
+- Response headers (`next.config.ts`): `Content-Security-Policy` (no nonces, so pages stay
+  prerendered: scripts and styles from this site plus inline, images from this site and
+  Vercel Blob, no framing, no plugins, forms post only here), `X-Content-Type-Options`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`; on Vercel also
+  `Strict-Transport-Security` and `upgrade-insecure-requests`. No `X-Powered-By`.
+- Database: in production the app connects as a role limited to reading and writing rows
+  (`docs/DEPLOYMENT.md`, 3.5); migrations use the owner role.
 - Errors: logged with `console.error` on the server; clients get generic text.
 
 ## Environment

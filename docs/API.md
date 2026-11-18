@@ -81,4 +81,5 @@ All require an admin session.
 ## Public action
 
 `submitContact` (`app/contact/actions.ts`): unchanged. Stores the message when a database
-is configured (`stored`), reports `demo` otherwise. No email. No rate limiting.
+is configured (`stored`), reports `demo` otherwise, and `throttled` after 10 stored
+messages from one IP in an hour. No email.

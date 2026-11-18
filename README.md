@@ -121,7 +121,9 @@ In short:
 
 1. Create a Neon database and run `DATABASE_URL="<prod url>" pnpm db:migrate`.
 2. Import the GitHub repository on Vercel (Next.js preset).
-3. Set `DATABASE_URL`, `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`. Optionally connect a
+3. Create the app's restricted database role
+   ([DEPLOYMENT.md 3.5](docs/DEPLOYMENT.md#35-create-the-apps-database-role)), then set
+   `DATABASE_URL` (that role), `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`. Optionally connect a
    public Vercel Blob store for photos.
 4. Deploy, then create the first admin:
    `DATABASE_URL="<prod url>" pnpm admin:create you@ajiet.edu.in "Your Name"`.
@@ -214,7 +216,8 @@ docs/             documentation
 - Participant login uses name + USN without a password. Anyone who knows a registered
   pair can log in as that person; one-session-per-USN, roster-only login, venue-issued
   keys and throttling limit the risk. Fine on site, not for remote events.
-- The contact form has no rate limiting.
+- Admin login: someone on the same network as an admin (the venue NAT) can lock that
+  admin's email out for 15 minutes by failing 5 times.
 - Times display in Asia/Kolkata.
 
 ## Documentation

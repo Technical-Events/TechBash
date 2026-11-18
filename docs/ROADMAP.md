@@ -26,7 +26,6 @@
 ## Suggestions (not approved)
 
 - Committed Playwright end-to-end suite and CI running typecheck, lint, tests, build.
-- Rate limiting on the contact form.
 - Participant passwords or one-time codes if the event is ever run remotely.
 - Multiple-answer questions; per-question time limits; negative marking.
 - Public leaderboard page after the event.

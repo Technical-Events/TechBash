@@ -74,7 +74,7 @@ when a decision changes.
   row into `contact_submissions` and reports that the message was stored. If not, it
   reports demo mode and that nothing was stored or sent.
 - **Consequences**: Nobody is notified of new messages; someone has to read the table.
-  There is no rate limiting.
+  Since 2026-11-18, at most 10 stored messages per IP per hour (ADR-013).
 - **Needs confirmation**: whether messages should be emailed, and to whom.
 
 ## ADR-007 — Node built-in test runner
@@ -152,6 +152,12 @@ when a decision changes.
   bucket. Per-account limits are tight; per-IP limits are loose because a venue shares one
   public IP.
 - **Consequences**: One extra query per attempt. Adequate for one event's traffic.
+- **Revised 2026-11-18**: the first version counted failures, then recorded them, so 30
+  parallel wrong keys were all checked against a limit of 8 (found in a security audit).
+  `beginAttempt()` now records the attempt first and then counts; `releaseAttempt()`
+  removes it when the outcome was not a failure. Admin login is limited per email and IP
+  (5) and per email (50), so a stranger on another network cannot lock an admin out. The
+  contact form counts stored messages per IP.
 
 ## ADR-014 — Vercel hosting and Vercel Blob for photos
 
@@ -207,3 +213,17 @@ when a decision changes.
   be changed from the panel.
 - **Consequences**: The terminal-created owner cannot be locked out by another admin. The
   password travels from admin to admin by hand.
+
+## ADR-019 — Content-Security-Policy without nonces
+
+- **Status**: Accepted (2026-11-18)
+- **Context**: A nonce-based policy is the strongest option, but Next.js then renders every
+  page per request, which turns off the prerendered Home and Contact pages.
+- **Decision**: A static policy in `next.config.ts`: `default-src 'self'`, scripts and
+  styles from this site plus `'unsafe-inline'` (Next.js needs inline scripts), images from
+  this site, `data:`, `blob:` and Vercel Blob, `object-src 'none'`, `base-uri 'self'`,
+  `form-action 'self'`, `frame-ancestors 'none'`; `upgrade-insecure-requests` and HSTS
+  (`max-age=63072000`, no `includeSubDomains`) on Vercel only.
+- **Consequences**: Framing, plugins, foreign form targets, foreign scripts and unexpected
+  connections are blocked; an injected inline script would still run. The code has no raw
+  HTML sinks (`dangerouslySetInnerHTML`), so that stays a second line of defence.
