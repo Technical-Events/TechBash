@@ -2,3 +2,14 @@ allowBuilds:
   esbuild: false
   sharp: false
   unrs-resolver: false
+
+overrides:
+  # GHSA-mrhx-c7xc-m3w5: @vercel/blob > @vercel/oidc 3.x > @vercel/cli-config pins
+  # zod 4.1.11. Same major, so the patched release is API-compatible.
+  "@vercel/cli-config>zod": 4.6.7
+  # GHSA-67mh-4wv8-2f99 (dev only): drizzle-kit > @esbuild-kit/core-utils pins an old
+  # esbuild. Checked with pnpm db:generate.
+  "@esbuild-kit/core-utils>esbuild": ^0.25.0
+  # Dev only (minimatch DoS advisory): @typescript-eslint calls only
+  # minimatch(path, pattern, { dot: true }), unchanged in v11. Checked with pnpm lint.
+  "@typescript-eslint/typescript-estree>minimatch": ^11.0.1
