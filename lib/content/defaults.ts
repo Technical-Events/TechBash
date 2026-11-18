@@ -17,7 +17,7 @@ export type RoundSummary = Pick<
 
 /**
  * Content shown when no database is configured. Matches the seed in
- * drizzle/0003_seed_event_content.sql; with a database, admins edit it.
+ * drizzle/0003_seed_event_content.sql and 0005_round_content_update.sql; with a database, admins edit it.
  */
 export const defaultEventInfo: EventInfo = {
   name: "TechBash",
@@ -67,16 +67,16 @@ export const defaultRounds: RoundSummary[] = [
     number: 1,
     title: "Quiz",
     description:
-      "Rapid-fire technical questions across programming, networks, databases and computing fundamentals.",
+      "Thirty quick questions from every engineering branch: civil, mechanical, electronics and VLSI, computer science, AI and ML, IoT, cyber security and blockchain, data science and information science.",
     status: "draft",
-    durationMinutes: 20,
+    durationMinutes: 30,
     sequential: false,
   },
   {
     number: 2,
     title: "Tech Treasure Hunt",
     description:
-      "Follow a trail of technical clues. Solve one to unlock the next.",
+      "Fifteen tech and logic puzzles. Solve one to unlock the next. The fastest to solve them all wins.",
     status: "draft",
     durationMinutes: 30,
     sequential: true,
