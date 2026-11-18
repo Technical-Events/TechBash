@@ -100,7 +100,7 @@ All in `components/ui/`.
 | `Field`                         | Label, input / textarea / select, hint, error | `multiline` for a textarea, `options` for a select. `id` override when a page repeats a form.                          |
 | `Checkbox`                      | Native checkbox drawn as `[x]` / `[ ]`        | Visible focus via `has-focus-visible`.                                                                                 |
 | `ActionForm`                    | Form bound to a Server Action                 | Pending label, live result (`OK ...` / `! ...`), issue list, one-time secret, `confirmLabel` for a two-click delete.   |
-| `Table`, `EmptyRow`             | Data tables                                   | Scrolls inside its own bordered box, never the page.                                                                   |
+| `Table`, `EmptyRow`             | Data tables                                   | Scrolls inside its own bordered box (`TableScroller`), never the page; says so below when wider than the screen.       |
 | `Stat`                          | Dashboard number                              | Label, value, optional detail.                                                                                         |
 | `PageHeading`, `SectionHeading` | `$ command` + `<h1>`; `# Title` `<h2>`        |                                                                                                                        |
 | `Loading`                       | Suspense fallback                             | `... label_` in a status region.                                                                                       |
@@ -116,7 +116,8 @@ Feature components (`components/home`, `components/test`, `components/rounds`,
 compose these and must not restyle them with one-off classes.
 
 Code snippets (Bug Hunt) render in a bordered `surface` box with muted line numbers that
-are `aria-hidden` and not selectable; the box scrolls on its own.
+are `aria-hidden` and not selectable. Long lines wrap under their own number, so on a phone
+no code hides behind a sideways scroll.
 
 CSS utilities in `app/globals.css`:
 
@@ -148,8 +149,14 @@ CSS utilities in `app/globals.css`:
 - Hero: one ASCII logo, 44 columns wide, with a fluid font size
   (`clamp(7px, 2.5vw, 18px)`) so it fits a 320px screen without scrolling.
 - Grids: one column on mobile, two from `sm`, three from `lg` where content allows.
-- Tap targets are at least 44px tall on touch layouts.
-- The page never scrolls horizontally. Verified at 320px, 375px and 1280px.
+- Tap targets are at least 44px tall on touch layouts (`min-h-11`; 41px where the root
+  font is 15px, below `sm`), including footer links, email and phone links and dashboard
+  chart rows (compact from `lg`).
+- Long words (names, emails) wrap: `body` sets `overflow-wrap: break-word`; flex children
+  that hold user text need `min-w-0`.
+- The page never scrolls horizontally. Verified on every page, logged out, as a participant
+  and as an admin, at 320, 360, 375, 390, 414, 740 (landscape phone), 768, 1024, 1280 and
+  1920px wide (2026-11-18).
 
 ## Accessibility and motion
 

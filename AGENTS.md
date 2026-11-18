@@ -89,7 +89,7 @@ request. The admin panel has its own section nav (`components/admin/admin-nav.ts
 - Server Components by default. Add `"use client"` only for state, effects or browser
   APIs, and keep the client part as small as possible.
 - Client Components today: `layout/nav-links.tsx`, `admin/admin-nav.tsx`,
-  `admin/bar-chart.tsx`, `ui/action-form.tsx`, `rounds/round-runner.tsx`,
+  `admin/bar-chart.tsx`, `ui/action-form.tsx`, `ui/table-scroller.tsx`, `rounds/round-runner.tsx`,
   `contact/contact-form.tsx`, `app/error.tsx`.
 - Keep pages thin; put sections in `components/<feature>/`.
 - Reuse `components/ui/`. Add a variant to an existing component before creating a new one.
