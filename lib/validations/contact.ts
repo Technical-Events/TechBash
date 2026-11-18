@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+// This file also runs in the browser (contact form). The site's
+// Content-Security-Policy blocks eval; Zod would otherwise test for it with
+// Function("") when the schemas below are created, and the browser reports a
+// CSP violation. Must run before any schema is created. On the server it
+// only turns off Zod's compiled fast path.
+z.config({ jitless: true });
+
 export const contactSchema = z.object({
   name: z
     .string()
