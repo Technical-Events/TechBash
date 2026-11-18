@@ -282,7 +282,7 @@ export default async function AdminRoundPage(
                   maxLength={64}
                   autoComplete="off"
                   spellCheck={false}
-                  hint="Leave empty for a random key. Case, spaces and dashes are ignored."
+                  hint="Leave empty for a random 6-digit key. Case, spaces and dashes are ignored."
                 />
               </div>
             </ActionForm>

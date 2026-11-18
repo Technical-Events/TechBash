@@ -48,17 +48,14 @@ test("short text with an empty accepted answer never matches blank input", () =>
   assert.equal(evaluateAnswer(key, "").isCorrect, false);
 });
 
-test("access keys are normalized, generated in groups and hinted", () => {
+test("access keys are normalized, generated as 6 digits and hinted", () => {
   assert.equal(normalizeAccessKey(" ab12-cd 34 "), "AB12CD34");
-  const keys = new Set(Array.from({ length: 200 }, generateAccessKey));
-  assert.equal(keys.size, 200);
-  for (const key of keys) {
-    assert.match(
-      key,
-      /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/,
-    );
-  }
-  assert.equal(accessKeyHint("K7QM-X2PD-9HRT"), "9HRT");
+  assert.equal(normalizeAccessKey("482 917"), "482917");
+  const keys = Array.from({ length: 2000 }, generateAccessKey);
+  for (const key of keys) assert.match(key, /^[1-9][0-9]{5}$/);
+  // 2000 draws from 900000 values: a handful of repeats at most.
+  assert.ok(new Set(keys).size > 1990);
+  assert.equal(accessKeyHint("482-917"), "17");
 });
 
 test("sniffImageType trusts bytes, not names", async () => {
