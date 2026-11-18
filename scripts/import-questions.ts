@@ -1,10 +1,11 @@
 /**
  * Loads round questions from a JSON question bank into the database.
  *
- *   pnpm questions:import [file] [--dry-run] [--replace]
+ *   pnpm questions:import [file] [--round=N] [--dry-run] [--replace]
  *
  * file       Defaults to private/question-bank.json. The private/ folder is
  *            gitignored: the bank holds the answer keys, so keep it out of Git.
+ * --round=N  Import only round N (1 to 3) from the file. Repeatable.
  * --dry-run  Only validate the file. Needs no database.
  * --replace  Delete a round's existing questions first. Refused once any
  *            participant has unlocked that round.
@@ -44,10 +45,13 @@ import { parseBank } from "../lib/rounds/question-bank.ts";
 async function main() {
   const args = process.argv.slice(2);
   const flags = new Set(args.filter((arg) => arg.startsWith("--")));
+  const only = new Set<number>();
   for (const flag of flags) {
-    if (flag !== "--dry-run" && flag !== "--replace") {
+    const round = /^--round=([1-3])$/.exec(flag);
+    if (round) only.add(Number(round[1]));
+    else if (flag !== "--dry-run" && flag !== "--replace") {
       throw new Error(
-        `Unknown option ${flag}.\nUsage: pnpm questions:import [file] [--dry-run] [--replace]`,
+        `Unknown option ${flag}.\nUsage: pnpm questions:import [file] [--round=N] [--dry-run] [--replace]`,
       );
     }
   }
@@ -62,7 +66,15 @@ async function main() {
       `Could not read ${file}: ${error instanceof Error ? error.message : error}`,
     );
   }
-  const bank = parseBank(raw);
+  // The whole file is validated; only the chosen rounds are imported.
+  const bank = parseBank(raw).filter(
+    (entry) => only.size === 0 || only.has(entry.round),
+  );
+  for (const round of only) {
+    if (!bank.some((entry) => entry.round === round)) {
+      throw new Error(`Round ${round} is not in ${file}.`);
+    }
+  }
   for (const { round, questions: list } of bank) {
     const points = list.reduce((total, q) => total + q.points, 0);
     console.log(`Round ${round}: ${list.length} questions, ${points} points.`);
