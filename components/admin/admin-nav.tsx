@@ -11,6 +11,7 @@ const items = [
   { href: "/admin/results", label: "Results" },
   { href: "/admin/content", label: "Content" },
   { href: "/admin/messages", label: "Messages" },
+  { href: "/admin/admins", label: "Admins" },
 ] as const;
 
 /** Admin section links. Client only for the active-page marker. */
