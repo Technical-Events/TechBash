@@ -6,6 +6,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -45,6 +46,12 @@ export const authUsers = pgTable("auth_users", {
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   role: userRole("role").notNull().default("participant"),
+  /**
+   * Admins only: email of the admin who added this one in the panel. Null
+   * for admins created with `pnpm admin:create`, who cannot be removed or
+   * have their password changed from the panel.
+   */
+  addedBy: text("added_by"),
   createdAt,
   updatedAt,
 });
@@ -166,6 +173,11 @@ export const rounds = pgTable(
     durationMinutes: integer("duration_minutes"),
     /** Sequential rounds show one question at a time, unlocked in order. */
     sequential: boolean("sequential").notNull().default(false),
+    /**
+     * Top N of the previous round the admin chose to advance. Null: every
+     * participant may unlock this round. Set: only `round_qualifiers` may.
+     */
+    qualifierLimit: integer("qualifier_limit"),
     createdAt,
     updatedAt,
   },
@@ -174,6 +186,10 @@ export const rounds = pgTable(
     check(
       "rounds_duration_positive",
       sql`${table.durationMinutes} is null or ${table.durationMinutes} > 0`,
+    ),
+    check(
+      "rounds_qualifier_limit_positive",
+      sql`${table.qualifierLimit} is null or ${table.qualifierLimit} > 0`,
     ),
   ],
 );
@@ -259,6 +275,26 @@ export const participants = pgTable("participants", {
   createdAt,
   updatedAt,
 });
+
+/**
+ * Participants allowed into a round whose `qualifier_limit` is set: the
+ * previous round's top N, written in one batch when the admin selects them.
+ */
+export const roundQualifiers = pgTable(
+  "round_qualifiers",
+  {
+    roundId: uuid("round_id")
+      .notNull()
+      .references(() => rounds.id, { onDelete: "cascade" }),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participants.id, { onDelete: "cascade" }),
+    /** Rank in the previous round when selected. */
+    rank: integer("rank").notNull(),
+    createdAt,
+  },
+  (table) => [primaryKey({ columns: [table.roundId, table.participantId] })],
+);
 
 /** One per participant and round, created when an access key is accepted. */
 export const roundAttempts = pgTable(

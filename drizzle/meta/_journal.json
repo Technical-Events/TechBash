@@ -29,6 +29,13 @@
       "when": 1792674071069,
       "tag": "0003_seed_event_content",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795016931066,
+      "tag": "0004_qualifiers_and_admins",
+      "breakpoints": true
     }
   ]
 }
