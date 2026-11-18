@@ -70,9 +70,24 @@ test("rejects duplicate options, prompts and rounds", () => {
       }),
     (error: Error) =>
       /two options have the same text/.test(error.message) &&
-      /same prompt as an earlier question/.test(error.message) &&
+      /same prompt and code as an earlier question/.test(error.message) &&
       /Round 2 appears twice/.test(error.message),
   );
+});
+
+test("allows a repeated prompt when the code differs", () => {
+  const [round] = parseBank({
+    rounds: [
+      {
+        round: 3,
+        questions: [
+          { ...choice("What is the output?"), code: "print(1)" },
+          { ...choice("What is the output?"), code: "print(2)" },
+        ],
+      },
+    ],
+  });
+  assert.equal(round.questions.length, 2);
 });
 
 test("rejects a malformed file and an unknown round", () => {

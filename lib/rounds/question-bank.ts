@@ -47,10 +47,14 @@ export function parseBank(raw: unknown): ParsedRound[] {
       round,
       questions: list.flatMap((question, index) => {
         const where = `Round ${round}, question ${index + 1}`;
-        if (prompts.has(question.prompt.trim())) {
-          problems.push(`${where}: same prompt as an earlier question.`);
+        // Code rounds reuse prompts ("What is the output?"); the code differs.
+        const identity = `${question.prompt.trim()}\n${question.code.trim()}`;
+        if (prompts.has(identity)) {
+          problems.push(
+            `${where}: same prompt and code as an earlier question.`,
+          );
         }
-        prompts.add(question.prompt.trim());
+        prompts.add(identity);
         if (question.type === "single_choice") {
           const matches = question.options.filter(
             (option) => option === question.answer,
