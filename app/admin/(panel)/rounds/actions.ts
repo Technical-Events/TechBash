@@ -2,19 +2,22 @@
 
 import { and, desc, eq, gt, isNull, lt, ne, notInArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
-import { updateTag } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminDb } from "@/lib/auth/session";
 import type { Db } from "@/lib/db";
 import { finalizeRoundAttempts } from "@/lib/db/queries/attempts";
 import { tags } from "@/lib/db/queries/content";
+import { getResultsData } from "@/lib/db/queries/results";
 import {
   accessKeys,
   attemptAnswers,
   questionOptions,
   questions,
+  roundQualifiers,
   rounds,
 } from "@/lib/db/schema";
+import { rankRound, selectQualifiers } from "@/lib/results/ranking";
 import { accessKeyHint, generateAccessKey } from "@/lib/rounds/access-key";
 import { evaluateAnswer } from "@/lib/rounds/evaluate";
 import { hashAccessKey } from "@/lib/security/access-key-hash";
@@ -22,6 +25,7 @@ import { type ActionState, checkbox, invalid } from "@/lib/validations/form";
 import {
   MAX_OPTIONS,
   accessKeySchema,
+  qualifierCountSchema,
   questionSchema,
   roundNumberSchema,
   roundSettingsSchema,
@@ -79,6 +83,110 @@ export async function updateRound(
     return { status: "success", message: "Round settings saved." };
   } catch (error) {
     console.error("updateRound failed", error);
+    return FAILED;
+  }
+}
+
+/* ----------------------------------------------------------- qualification */
+
+/**
+ * Lets only the previous round's top N into this round. Replaces any
+ * earlier selection. The previous round must be closed, so its ranking is
+ * final; a tie on the last place advances everyone sharing it.
+ */
+export async function setQualifiers(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { db } = await requireAdminDb();
+  const count = qualifierCountSchema.safeParse(text(formData, "count"));
+  if (!count.success) return invalid(count.error);
+
+  try {
+    const round = await findRound(db, formData.get("round"));
+    if (!round) return { status: "error", message: "Unknown round." };
+    const from = round.number - 1;
+    if (from < 1) {
+      return {
+        status: "error",
+        message: "Round 1 is always open to every participant.",
+      };
+    }
+    const [previous] = await db
+      .select({ status: rounds.status })
+      .from(rounds)
+      .where(eq(rounds.number, from));
+    if (previous?.status !== "closed") {
+      return {
+        status: "error",
+        message: `Close round ${from} first, so its ranking is final.`,
+      };
+    }
+
+    const data = await getResultsData(db);
+    const chosen = selectQualifiers(rankRound(data.outcomes, from), count.data);
+    if (chosen.length === 0) {
+      return {
+        status: "error",
+        message: `Nobody submitted round ${from}, so nobody can advance.`,
+      };
+    }
+    await db.batch([
+      db.delete(roundQualifiers).where(eq(roundQualifiers.roundId, round.id)),
+      db.insert(roundQualifiers).values(
+        chosen.map((entry) => ({
+          roundId: round.id,
+          participantId: entry.participantId,
+          rank: entry.rank,
+        })),
+      ),
+      db
+        .update(rounds)
+        .set({ qualifierLimit: count.data })
+        .where(eq(rounds.id, round.id)),
+    ]);
+    refresh();
+
+    const n = chosen.length;
+    const note =
+      n > count.data
+        ? ` (${count.data} requested; everyone tied on the last place advances)`
+        : n < count.data
+          ? ` (only ${n} submitted round ${from})`
+          : "";
+    return {
+      status: "success",
+      message: `${n} participant${n === 1 ? "" : "s"} advance to round ${round.number}${note}.`,
+    };
+  } catch (error) {
+    console.error("setQualifiers failed", error);
+    return FAILED;
+  }
+}
+
+/** Removes the selection: every participant may unlock the round again. */
+export async function clearQualifiers(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { db } = await requireAdminDb();
+  try {
+    const round = await findRound(db, formData.get("round"));
+    if (!round) return { status: "error", message: "Unknown round." };
+    await db.batch([
+      db.delete(roundQualifiers).where(eq(roundQualifiers.roundId, round.id)),
+      db
+        .update(rounds)
+        .set({ qualifierLimit: null })
+        .where(eq(rounds.id, round.id)),
+    ]);
+    refresh();
+    return {
+      status: "success",
+      message: `Round ${round.number} is open to every participant again.`,
+    };
+  } catch (error) {
+    console.error("clearQualifiers failed", error);
     return FAILED;
   }
 }

@@ -1,5 +1,7 @@
 import { z } from "zod";
-import { questionTypes, roundStatuses } from "@/lib/rounds/constants";
+// Relative import with an extension: scripts/import-questions.ts reuses
+// questionSchema, and Node's type stripping has no "@/" alias.
+import { questionTypes, roundStatuses } from "../rounds/constants.ts";
 
 export const roundNumberSchema = z.coerce.number().int().min(1).max(3);
 
@@ -66,6 +68,13 @@ export const questionSchema = z
     }
   });
 export type QuestionInput = z.infer<typeof questionSchema>;
+
+/** How many of the previous round's top places advance. */
+export const qualifierCountSchema = z.coerce
+  .number({ error: "Enter a whole number." })
+  .int("Enter a whole number.")
+  .min(1, "At least one participant must advance.")
+  .max(100_000);
 
 export const accessKeySchema = z.object({
   label: z.string().trim().min(1, "Give the key a label.").max(60),

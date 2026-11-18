@@ -45,6 +45,8 @@ export type ResultsData = {
   rounds: RoundInfo[];
   participants: ParticipantRow[];
   attempts: AttemptRow[];
+  /** Per participant, every attempt's score and times (input to the rankings). */
+  outcomes: ParticipantOutcome[];
   ranked: RankedParticipant[];
 };
 
@@ -127,6 +129,7 @@ export async function getResultsData(db: Db): Promise<ResultsData> {
     rounds: roundInfo,
     participants: participantRows,
     attempts: attemptRows,
+    outcomes,
     ranked: rankParticipants(outcomes, roundInfo.length),
   };
 }
