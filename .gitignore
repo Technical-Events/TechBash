@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# event secrets: question bank with answer keys, access-key sheet (tech team only)
+/private/
