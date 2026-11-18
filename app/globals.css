@@ -43,6 +43,8 @@
     background: var(--color-bg);
     color: var(--color-fg);
     line-height: 1.6;
+    /* Long names, emails and URLs wrap instead of widening the page. */
+    overflow-wrap: break-word;
   }
 
   h1,

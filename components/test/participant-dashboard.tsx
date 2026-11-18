@@ -110,7 +110,7 @@ export function ParticipantDashboard({
     <div className="space-y-12">
       <Panel title="session">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-muted">Logged in as</p>
             <p className="text-lg font-bold">{viewer.fullName}</p>
             <p className="text-sm tracking-[0.08em] text-accent">
