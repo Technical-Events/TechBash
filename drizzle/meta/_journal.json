@@ -43,6 +43,13 @@
       "when": 1795016931717,
       "tag": "0005_round_content_update",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795154784890,
+      "tag": "0006_event_team_content",
+      "breakpoints": true
     }
   ]
 }

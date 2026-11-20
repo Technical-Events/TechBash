@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { updateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdminDb } from "@/lib/auth/session";
-import { photoExtension, sniffImageType } from "@/lib/content/photo";
+import { isBlobUrl, photoExtension, sniffImageType } from "@/lib/content/photo";
 import { tags } from "@/lib/db/queries/content";
 import { eventInfo, people } from "@/lib/db/schema";
 import {
@@ -27,7 +27,7 @@ function text(formData: FormData, name: string): string {
 
 /** Deletes an uploaded photo. Failure only leaves an orphan file, so it is logged, not raised. */
 async function removeBlob(url: string | null) {
-  if (!url || !process.env.BLOB_READ_WRITE_TOKEN) return;
+  if (!url || !isBlobUrl(url) || !process.env.BLOB_READ_WRITE_TOKEN) return;
   try {
     await del(url);
   } catch (error) {

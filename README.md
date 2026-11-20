@@ -25,8 +25,8 @@ roster, results, winners and site content.
 
 **Public site**
 
-- **Home**: event introduction and details, the three rounds, faculty coordinators and
-  the team with photos.
+- **Home**: event introduction and details, the three rounds, faculty members and student
+  coordinators with photos.
 - **Contact Us**: technical lead, faculty with photos and contact details, and a contact
   form whose messages the admins read in the panel.
 
@@ -55,7 +55,7 @@ roster, results, winners and site content.
 | Rounds       | Settings (draft / open / closed, time limit), top N who advance, questions, access keys   |
 | Participants | Add, bulk import, edit, end sessions, reset a round, delete; every answer per participant |
 | Results      | Full ranking with tie-breaks, winner list, first finisher, CSV exports                    |
-| Content      | Event details, technical lead, faculty and team profiles with photo upload                |
+| Content      | Event details, technical lead, faculty and student coordinator profiles with photo upload |
 | Messages     | Contact form submissions                                                                  |
 | Admins       | Add admins (name, email, password), set a new password, remove                            |
 
@@ -176,6 +176,7 @@ app/              pages and routes
   test/             participant login, rounds
   admin/            admin login and panel
 components/       UI (ui/ holds the design-system primitives)
+public/people/    bundled faculty and student coordinator photos
 lib/
   auth/             Better Auth setup and session helpers
   db/               schema, client, queries
@@ -206,9 +207,12 @@ docs/             documentation
 
 - Verified end to end on a local PostgreSQL database: login, rounds, timers, throttling,
   admin panel, results and exports.
-- Not yet deployed to Vercel or run against a real Neon project.
-- Added 2026-11-18 and not yet run against any database: qualification (top N), the
-  Admins page, `pnpm questions:import`, migrations `0004` and `0005`.
+- Hosted on Vercel.
+- Migrations `0004` to `0006` applied with `pnpm db:migrate` on 2026-11-20. Qualification
+  (top N), the Admins page and `pnpm questions:import` have not yet been exercised against
+  the deployed site.
+- Added 2026-11-20: confirmed event date and venue, three faculty members and one student
+  coordinator, with bundled photos (migration `0006`).
 - Photo upload is implemented but untested (needs a Blob token).
 
 ## Known limitations

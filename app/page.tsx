@@ -78,20 +78,18 @@ export default async function HomePage() {
       </section>
 
       <section aria-labelledby="faculty-heading">
-        <SectionHeading id="faculty-heading">
-          Faculty coordinators
-        </SectionHeading>
+        <SectionHeading id="faculty-heading">Faculty members</SectionHeading>
         <PeopleGrid people={faculty} />
       </section>
 
       <section aria-labelledby="team-heading">
-        <SectionHeading id="team-heading">The team</SectionHeading>
+        <SectionHeading id="team-heading">Student coordinators</SectionHeading>
         {team.length > 0 ? (
           <PeopleGrid people={team} />
         ) : (
           <Panel dashed>
             <p className="text-muted">
-              # Team members will be listed here soon.
+              # Student coordinators will be listed here soon.
             </p>
           </Panel>
         )}

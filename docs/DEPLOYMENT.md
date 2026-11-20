@@ -157,7 +157,7 @@ DATABASE_URL="<production connection string>" pnpm db:migrate
 ```
 
 This creates every table and seeds the three rounds (as Draft), the event details and the
-two faculty coordinators. Running it again later only applies new migrations.
+coordinators. Running it again later only applies new migrations.
 
 Migrations always use the **owner** connection string (the one Neon shows by default,
 user `neondb_owner`). The app itself uses the role from 3.5.

@@ -23,7 +23,7 @@ export default async function ContentPage() {
     },
     {
       kind: "team",
-      title: "Team members",
+      title: "Student coordinators",
       list: people.filter((p) => p.kind === "team"),
     },
   ];

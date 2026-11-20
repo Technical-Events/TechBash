@@ -2,11 +2,10 @@
 
 PostgreSQL on Neon, accessed with Drizzle ORM over the Neon HTTP driver.
 
-> **Status**: migrations `0000` to `0003` were applied with `psql` to a local PostgreSQL 17
-> and the whole application was exercised against it through Neon's local HTTP proxy
-> (2026-10-22). They have not been applied to a Neon project yet, and `pnpm db:migrate`
-> itself has not been run (see "Local database"). `0004` and `0005` have not been applied to
-> any database yet.
+> **Status**: migrations `0000` to `0003` were first exercised end to end on a local
+> PostgreSQL 17 through Neon's local HTTP proxy (2026-10-22). `0000` to `0006` were applied
+> with `pnpm db:migrate` against the database configured in `.env.local` on 2026-11-20;
+> confirm which Neon branch that connection points at before treating it as production.
 
 ## Neon setup
 
@@ -71,8 +70,9 @@ Single row, `id = 1` (check constraint). Event name, tagline, introduction, deta
 
 ### `people`
 
-Faculty and team profiles: `kind` (`person_kind`: `faculty`, `team`), name, role,
-department, bio, email, phone, `photo_url` (Vercel Blob), `position` (sort order).
+Faculty and student coordinator profiles: `kind` (`person_kind`: `faculty`, `team`), name,
+role, department, bio, email, phone, `photo_url` (a bundled `/people/...` path or a Vercel
+Blob URL), `position` (sort order).
 
 ### `rounds`
 
@@ -129,14 +129,15 @@ Unchanged from the scaffold.
 
 ## Migrations
 
-| File                             | Contents                                                                                                                                                    |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0000_init.sql`                  | Scaffold tables (demo quiz model, contact).                                                                                                                 |
-| `0001_drop_demo_quiz_tables.sql` | Drops the unused demo quiz tables and enums.                                                                                                                |
-| `0002_event_platform.sql`        | Auth, content, rounds, keys, attempts, throttle tables.                                                                                                     |
-| `0003_seed_event_content.sql`    | **Custom** (`drizzle-kit generate --custom`): the 3 rounds, event info, Devika Ma'am and Anusha Ma'am. Idempotent for rounds and event info.                |
-| `0004_qualifiers_and_admins.sql` | `round_qualifiers`, `rounds.qualifier_limit`, `auth_users.added_by`.                                                                                        |
-| `0005_round_content_update.sql`  | **Custom**: round 1 to 30 minutes and an all-branch description; round 2 multiple-choice wording. Each value changes only if it still equals the 0003 seed. |
+| File                             | Contents                                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0000_init.sql`                  | Scaffold tables (demo quiz model, contact).                                                                                                                                                                           |
+| `0001_drop_demo_quiz_tables.sql` | Drops the unused demo quiz tables and enums.                                                                                                                                                                          |
+| `0002_event_platform.sql`        | Auth, content, rounds, keys, attempts, throttle tables.                                                                                                                                                               |
+| `0003_seed_event_content.sql`    | **Custom** (`drizzle-kit generate --custom`): the 3 rounds, event info, Devika Ma'am and Anusha Ma'am. Idempotent for rounds and event info.                                                                          |
+| `0004_qualifiers_and_admins.sql` | `round_qualifiers`, `rounds.qualifier_limit`, `auth_users.added_by`.                                                                                                                                                  |
+| `0005_round_content_update.sql`  | **Custom**: round 1 to 30 minutes and an all-branch description; round 2 multiple-choice wording. Each value changes only if it still equals the 0003 seed.                                                           |
+| `0006_event_team_content.sql`    | **Custom**: confirmed event date (Tuesday, 24 November 2026, 9:30 AM) and venue; renames and re-roles the two seeded faculty, adds Mrs. Remul Pinto and student coordinator S. Mohammed Sharwan, with bundled photos. |
 
 The drop and create were generated in two steps so drizzle-kit would not prompt about
 renaming the old `questions` table.

@@ -16,8 +16,9 @@ export type RoundSummary = Pick<
 >;
 
 /**
- * Content shown when no database is configured. Matches the seed in
- * drizzle/0003_seed_event_content.sql and 0005_round_content_update.sql; with a database, admins edit it.
+ * Content shown when no database is configured. Matches the seeds in
+ * drizzle/0003_seed_event_content.sql, 0005_round_content_update.sql and
+ * 0006_event_team_content.sql; with a database, admins edit it.
  */
 export const defaultEventInfo: EventInfo = {
   name: "TechBash",
@@ -26,8 +27,8 @@ export const defaultEventInfo: EventInfo = {
     "TechBash is a technical event with three rounds: a quiz, a tech treasure hunt and a bug hunt. Log in with your full name and USN, unlock each round with the access key announced at the venue, and compete for the top of the leaderboard.",
   details:
     "Scores are counted on the server. Ties are broken by total time taken, then by who finished first.",
-  eventDate: "Date to be announced",
-  venue: "A J Institute of Engineering and Technology",
+  eventDate: "Tuesday, 24 November 2026, 9:30 AM",
+  venue: "Seminar Hall 1, A J Institute of Engineering and Technology",
   organizer: "Department of Computer Science and Engineering",
   leadName: "S. Mohammed Sharwan",
   leadEmail: "sharwan@ajiet.edu.in",
@@ -36,7 +37,7 @@ export const defaultEventInfo: EventInfo = {
   winnerCount: 3,
 };
 
-const facultyDefaults = {
+const personDefaults = {
   role: "Faculty Coordinator",
   department: "",
   bio: "",
@@ -49,16 +50,38 @@ export const defaultPeople: Person[] = [
   {
     id: "default-devika",
     kind: "faculty",
-    name: "Devika Ma'am",
+    name: "Ms. Devika",
     position: 1,
-    ...facultyDefaults,
+    ...personDefaults,
+    role: "Co-Curricular Coordinator",
+    photoUrl: "/people/devika.jpg",
   },
   {
     id: "default-anusha",
     kind: "faculty",
-    name: "Anusha Ma'am",
+    name: "Mrs. Anusha Anchan",
     position: 2,
-    ...facultyDefaults,
+    ...personDefaults,
+    role: "Event Coordinator",
+    photoUrl: "/people/anusha.jpg",
+  },
+  {
+    id: "default-remul",
+    kind: "faculty",
+    name: "Mrs. Remul Pinto",
+    position: 3,
+    ...personDefaults,
+    role: "Event Coordinator",
+    photoUrl: "/people/remul-pinto.jpg",
+  },
+  {
+    id: "default-sharwan",
+    kind: "team",
+    name: "S. Mohammed Sharwan",
+    position: 1,
+    ...personDefaults,
+    role: "Technical Coordinator",
+    photoUrl: "/people/s-mohammed-sharwan.jpg",
   },
 ];
 

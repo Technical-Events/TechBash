@@ -7,7 +7,7 @@ import { personKinds } from "@/lib/rounds/constants";
 
 const kindOptions = personKinds.map((kind) => ({
   value: kind,
-  label: kind === "faculty" ? "Faculty" : "Team member",
+  label: kind === "faculty" ? "Faculty" : "Student coordinator",
 }));
 
 /** Edit form for one profile, or a blank form to add one. */

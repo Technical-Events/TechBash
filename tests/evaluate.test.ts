@@ -78,3 +78,24 @@ test("sniffImageType trusts bytes, not names", async () => {
   );
   assert.equal(sniffImageType(new Uint8Array([])), null);
 });
+
+test("isBlobUrl only accepts public Vercel Blob URLs", async () => {
+  const { isBlobUrl } = await import("../lib/content/photo.ts");
+  assert.equal(
+    isBlobUrl("https://store.public.blob.vercel-storage.com/people/x.jpg"),
+    true,
+  );
+  assert.equal(
+    isBlobUrl("http://store.public.blob.vercel-storage.com/people/x.jpg"),
+    false,
+  );
+  assert.equal(isBlobUrl("https://example.com/people/x.jpg"), false);
+  assert.equal(
+    isBlobUrl(
+      "https://store.public.blob.vercel-storage.com.evil.example/people/x.jpg",
+    ),
+    false,
+  );
+  assert.equal(isBlobUrl("/people/devika.jpg"), false);
+  assert.equal(isBlobUrl("not a url"), false);
+});

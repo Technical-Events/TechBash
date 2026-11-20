@@ -139,7 +139,8 @@ every round. Dashboard, results page and exports all use the same data.
   `x-forwarded-for`, which Vercel sets.
 - Access keys are compared as HMACs; the plaintext is shown once to the admin.
 - Photo uploads: 2 MB limit, type sniffed from the file bytes (JPEG, PNG, WebP), stored
-  in Vercel Blob under `people/`; `next/image` only allows that host and path.
+  in Vercel Blob under `people/`; `next/image` only allows that host and path. The
+  coordinators' bundled portraits live in `public/people/` and use the same field.
 - CSV exports neutralize spreadsheet formulas.
 - Response headers (`next.config.ts`): `Content-Security-Policy` (no nonces, so pages stay
   prerendered: scripts and styles from this site plus inline, images from this site and

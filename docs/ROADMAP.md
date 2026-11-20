@@ -14,13 +14,14 @@
   treasure hunt, loaded by `pnpm questions:import` from a gitignored bank; top-N
   qualification between rounds; admin management in the panel; access-key sheet.
   Typecheck, lint, tests and build pass; not yet exercised against a database.
+- **2026-11-20**: confirmed event date and venue; three faculty members and one student
+  coordinator with bundled photos; Home sections renamed to Faculty members and Student
+  coordinators.
 
 ## Next (confirmed)
 
-- **Go live**: create the Neon project, run `pnpm db:migrate` and `pnpm admin:create`,
-  configure Vercel (env vars, Blob store), deploy, then repeat the end-to-end checks on
-  the deployed site and verify a photo upload.
-- **Content**: real event date and venue, faculty details and photos, team members.
+- **Go live checks**: repeat the end-to-end checks on the deployed site and verify a photo
+  upload.
 - **Rehearsal**: a dry run with a few participants on the real deployment before the event.
 
 ## Suggestions (not approved)

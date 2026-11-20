@@ -18,6 +18,22 @@ export function sniffImageType(bytes: Uint8Array): PhotoType | null {
   return null;
 }
 
+/**
+ * True only for public Vercel Blob URLs. Bundled portraits use relative
+ * `/people/...` paths and must never be passed to the Blob delete API.
+ */
+export function isBlobUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return (
+      protocol === "https:" &&
+      hostname.endsWith(".public.blob.vercel-storage.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export const photoExtension: Record<PhotoType, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
