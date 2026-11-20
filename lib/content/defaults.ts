@@ -17,8 +17,8 @@ export type RoundSummary = Pick<
 
 /**
  * Content shown when no database is configured. Matches the seeds in
- * drizzle/0003_seed_event_content.sql, 0005_round_content_update.sql and
- * 0006_event_team_content.sql; with a database, admins edit it.
+ * drizzle/0003_seed_event_content.sql and content updates 0005-0007; with a
+ * database, admins edit it.
  */
 export const defaultEventInfo: EventInfo = {
   name: "TechBash",
@@ -29,7 +29,7 @@ export const defaultEventInfo: EventInfo = {
     "Scores are counted on the server. Ties are broken by total time taken, then by who finished first.",
   eventDate: "Tuesday, 24 November 2026, 9:30 AM",
   venue: "Seminar Hall 1, A J Institute of Engineering and Technology",
-  organizer: "Department of Computer Science and Engineering",
+  organizer: "Technical Committee AJIET",
   leadName: "S. Mohammed Sharwan",
   leadEmail: "sharwan@ajiet.edu.in",
   leadPhone: "",

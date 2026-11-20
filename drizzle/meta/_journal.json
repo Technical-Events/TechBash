@@ -50,6 +50,13 @@
       "when": 1795154784890,
       "tag": "0006_event_team_content",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795156266697,
+      "tag": "0007_organizer_update",
+      "breakpoints": true
     }
   ]
 }

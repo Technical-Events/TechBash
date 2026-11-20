@@ -208,7 +208,7 @@ docs/             documentation
 - Verified end to end on a local PostgreSQL database: login, rounds, timers, throttling,
   admin panel, results and exports.
 - Hosted on Vercel.
-- Migrations `0004` to `0006` applied with `pnpm db:migrate` on 2026-11-20. Qualification
+- Migrations `0004` to `0007` applied with `pnpm db:migrate` on 2026-11-20. Qualification
   (top N), the Admins page and `pnpm questions:import` have not yet been exercised against
   the deployed site.
 - Added 2026-11-20: confirmed event date and venue, three faculty members and one student
