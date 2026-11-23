@@ -392,7 +392,11 @@ function OpenRound({
   }
 
   function go(next: number) {
-    persist(question.id, draft, () => setIndex(next));
+    persist(question.id, draft, () => {
+      // The notice belongs to the question being left.
+      onNotice(null);
+      setIndex(next);
+    });
   }
 
   /** Saves every typed-but-unsaved answer before the round is submitted. */
