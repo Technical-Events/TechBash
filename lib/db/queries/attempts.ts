@@ -228,24 +228,6 @@ export function currentClueIndex(
   return index === -1 ? list.length : index;
 }
 
-export async function getAttempt(
-  db: Db,
-  participantId: string,
-  roundId: string,
-) {
-  const [attempt] = await db
-    .select()
-    .from(roundAttempts)
-    .where(
-      and(
-        eq(roundAttempts.participantId, participantId),
-        eq(roundAttempts.roundId, roundId),
-      ),
-    )
-    .limit(1);
-  return attempt ?? null;
-}
-
 /** A round by number plus this participant's attempt at it, in one query. */
 export async function getRoundWithAttempt(
   db: Db,
@@ -297,17 +279,10 @@ export async function getParticipantRound(
   roundNumber: number,
 ): Promise<ParticipantRoundView | null> {
   await finalizeExpiredAttempts(db);
-  const [round] = await db
-    .select()
-    .from(rounds)
-    .where(eq(rounds.number, roundNumber))
-    .limit(1);
-  if (!round) return null;
-  const [attempt, qualified] = await Promise.all([
-    getAttempt(db, participantId, round.id),
-    isQualified(db, round, participantId),
-  ]);
-  if (!attempt || !qualified) return null;
+  const row = await getRoundWithAttempt(db, participantId, roundNumber);
+  if (!row?.attempt) return null;
+  const { round, attempt } = row;
+  if (!(await isQualified(db, round, participantId))) return null;
 
   const [list, answerRows] = await Promise.all([
     getRoundQuestions(db, round.id),
