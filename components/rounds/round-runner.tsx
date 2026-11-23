@@ -355,69 +355,77 @@ function OpenRound({
     ),
   );
   const [saved, setSaved] = useState<Record<string, string>>(drafts);
-  const [saving, startSaving] = useTransition();
+  const [pending, setPending] = useState(0);
+  const saving = pending > 0;
+  // Refs mirror state for the save queue, which runs after renders.
+  const latest = useRef(drafts);
+  const savedRef = useRef(saved);
+  const queue = useRef<Promise<boolean>>(Promise.resolve(true));
 
   const question = questions[index];
   const draft = drafts[question.id] ?? "";
   const dirty = draft.trim() !== "" && draft !== saved[question.id];
   const answeredCount = questions.filter((q) => saved[q.id]).length;
 
-  function persist(questionId: string, value: string, then?: () => void) {
-    if (value.trim() === "" || value === saved[questionId]) {
-      then?.();
-      return;
-    }
-    startSaving(async () => {
-      try {
-        const result = await saveAnswer({
-          round: roundNumber,
-          questionId,
-          answer: value,
-        });
-        if (result.ok) {
-          setSaved((current) => ({ ...current, [questionId]: value }));
-          onNotice({ tone: "ok", text: "Answer saved." });
-          then?.();
-        } else {
-          onNotice({ tone: "error", text: result.error });
-          if (result.expired) router.refresh();
-        }
-      } catch {
-        onNotice({
-          tone: "error",
-          text: "Could not reach the server. Your answer is not saved yet.",
-        });
+  async function send(questionId: string, value: string): Promise<boolean> {
+    // A newer value for this question is queued behind: let it win.
+    if (latest.current[questionId] !== value) return true;
+    if (value === savedRef.current[questionId]) return true;
+    try {
+      const result = await saveAnswer({
+        round: roundNumber,
+        questionId,
+        answer: value,
+      });
+      if (!result.ok) {
+        const number = questions.findIndex((q) => q.id === questionId) + 1;
+        onNotice({ tone: "error", text: `Question ${number}: ${result.error}` });
+        if (result.expired) router.refresh();
+        return false;
       }
-    });
+      savedRef.current = { ...savedRef.current, [questionId]: value };
+      setSaved(savedRef.current);
+      return true;
+    } catch {
+      onNotice({
+        tone: "error",
+        text: "Could not reach the server. Your answer is not saved yet.",
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Saves in the background, one request at a time so an older pick can
+   * never overwrite a newer one. Moving between questions does not wait.
+   */
+  function persist(questionId: string, value: string) {
+    if (value.trim() === "" || value === savedRef.current[questionId]) return;
+    setPending((n) => n + 1);
+    queue.current = queue.current
+      .then(() => send(questionId, value))
+      .finally(() => setPending((n) => n - 1));
+  }
+
+  function setDraft(questionId: string, value: string) {
+    latest.current = { ...latest.current, [questionId]: value };
+    setDrafts(latest.current);
   }
 
   function go(next: number) {
-    persist(question.id, draft, () => {
-      // The notice belongs to the question being left.
-      onNotice(null);
-      setIndex(next);
-    });
+    persist(question.id, draft);
+    // The notice belongs to the question being left.
+    onNotice(null);
+    setIndex(next);
   }
 
   /** Saves every typed-but-unsaved answer before the round is submitted. */
   async function flushDrafts(): Promise<boolean> {
+    await queue.current;
     for (const q of questions) {
-      const value = drafts[q.id] ?? "";
-      if (value.trim() === "" || value === saved[q.id]) continue;
-      const result = await saveAnswer({
-        round: roundNumber,
-        questionId: q.id,
-        answer: value,
-      });
-      if (!result.ok) {
-        onNotice({
-          tone: "error",
-          text: `Question ${questions.indexOf(q) + 1}: ${result.error}`,
-        });
-        if (result.expired) router.refresh();
-        return false;
-      }
-      setSaved((current) => ({ ...current, [q.id]: value }));
+      const value = latest.current[q.id] ?? "";
+      if (value.trim() === "" || value === savedRef.current[q.id]) continue;
+      if (!(await send(q.id, value))) return false;
     }
     return true;
   }
@@ -467,16 +475,25 @@ function OpenRound({
             question={question}
             value={draft}
             onChange={(value) => {
-              setDrafts((current) => ({ ...current, [question.id]: value }));
+              setDraft(question.id, value);
               if (question.type === "single_choice")
                 persist(question.id, value);
             }}
           />
+          <p className="mt-3 min-h-5 text-xs text-muted">
+            {draft.trim() === ""
+              ? ""
+              : dirty
+                ? saving
+                  ? "... Saving"
+                  : "# Not saved yet"
+                : "# Answer saved"}
+          </p>
           {noticeLine}
           <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
             <Button
               variant="secondary"
-              disabled={index === 0 || saving}
+              disabled={index === 0}
               onClick={() => go(index - 1)}
             >
               Back
@@ -493,7 +510,7 @@ function OpenRound({
                 </Button>
               )}
               <Button
-                disabled={index === questions.length - 1 || saving}
+                disabled={index === questions.length - 1}
                 onClick={() => go(index + 1)}
               >
                 Next
