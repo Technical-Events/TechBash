@@ -5,6 +5,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Panel } from "@/components/ui/panel";
+import { AutoRefresh } from "./auto-refresh";
 import type { ParticipantViewer } from "@/lib/auth/session";
 import type { ParticipantRoundCard } from "@/lib/db/queries/attempts";
 import { formatDateTime } from "@/lib/format";
@@ -106,8 +107,11 @@ export function ParticipantDashboard({
   resultsPublished: boolean;
 }) {
   const submitted = rounds.filter((round) => round.attempt?.submittedAt).length;
+  // A round the admin has not opened yet: pick up the change without a reload.
+  const waiting = rounds.some((round) => round.status === "draft");
   return (
     <div className="space-y-12">
+      {waiting && <AutoRefresh seconds={15} />}
       <Panel title="session">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
