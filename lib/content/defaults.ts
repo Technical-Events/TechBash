@@ -99,7 +99,7 @@ export const defaultRounds: RoundSummary[] = [
     number: 2,
     title: "Tech Treasure Hunt",
     description:
-      "Fifteen tech and logic puzzles. Solve one to unlock the next. The fastest to solve them all wins.",
+      "Thirty connected tech clues: each answer leads to the next. Solve one to unlock the next. The fastest to solve them all wins.",
     status: "draft",
     durationMinutes: 30,
     sequential: true,
