@@ -43,3 +43,7 @@ next-env.d.ts
 
 # event secrets: question bank with answer keys, access-key sheet (tech team only)
 /private/
+
+# event data kept in docs/ locally: round 2 answer key, participant registrations (personal data)
+/docs/technical_treasure_hunt_round_2.pdf
+/docs/TECHBASH TECHNICAL QUIZ 2026 (Responses).xlsx
