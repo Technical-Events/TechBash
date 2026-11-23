@@ -136,6 +136,10 @@ Push the repository to GitHub (for example `git push -u origin main`).
 
 1. Sign in at <https://console.neon.tech> and create a project. Pick the region closest to
    the venue (for India: `AWS Asia Pacific (Singapore)` or `(Mumbai)` if offered).
+   `vercel.json` runs the functions in `sin1` (Singapore), next to a Singapore database.
+   Every page and answer save makes several database queries, so a function far from the
+   database (Vercel's default is `iad1`, Washington) adds about 0.2 s per query. If you
+   pick another database region, change `regions` in `vercel.json` to the nearest one.
 2. Keep the default `main` branch for production. Optionally create a `preview` branch
    for Vercel preview deployments and a `dev` branch for local work.
 
