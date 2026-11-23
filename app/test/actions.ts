@@ -12,16 +12,16 @@ import {
   DEADLINE_GRACE_MS,
   currentClueIndex,
   finalizeExpiredAttempts,
-  getAttempt,
+  getQuestion,
   getAttemptAnswers,
   getRoundQuestions,
+  getRoundWithAttempt,
   isQualified,
 } from "@/lib/db/queries/attempts";
 import {
   accessKeys,
   attemptAnswers,
   roundAttempts,
-  rounds,
 } from "@/lib/db/schema";
 import { evaluateAnswer } from "@/lib/rounds/evaluate";
 import type { SaveAnswerResult, SubmitRoundResult } from "@/lib/rounds/types";
@@ -139,11 +139,12 @@ export async function unlockRound(
   const bucket = `access-key:${viewer.participantId}:${parsed.data.round}`;
   let attempt: Attempt | null = null;
   try {
-    const [round] = await db
-      .select()
-      .from(rounds)
-      .where(eq(rounds.number, parsed.data.round))
-      .limit(1);
+    const row = await getRoundWithAttempt(
+      db,
+      viewer.participantId,
+      parsed.data.round,
+    );
+    const round = row?.round;
     if (!round || round.status === "draft") {
       return { status: "error", message: "This round is not open yet." };
     }
@@ -154,8 +155,7 @@ export async function unlockRound(
       return { status: "error", message: notQualified(round) };
     }
 
-    const existing = await getAttempt(db, viewer.participantId, round.id);
-    if (!existing) {
+    if (!row.attempt) {
       attempt = await beginAttempt(db, [[bucket, rules.accessKey]]);
       if (!attempt) {
         return {
@@ -219,15 +219,16 @@ export async function saveAnswer(input: unknown): Promise<SaveAnswerResult> {
 
   const { round: roundNumber, questionId, answer } = parsed.data;
   try {
-    const [round] = await db
-      .select()
-      .from(rounds)
-      .where(eq(rounds.number, roundNumber))
-      .limit(1);
+    // Independent reads run together: each one is a network round trip.
+    const [row, question] = await Promise.all([
+      getRoundWithAttempt(db, viewer.participantId, roundNumber),
+      getQuestion(db, questionId),
+    ]);
+    const round = row?.round;
     if (!round || round.status !== "open") {
       return { ok: false, error: "This round is not open.", expired: true };
     }
-    const attempt = await getAttempt(db, viewer.participantId, round.id);
+    const attempt = row.attempt;
     if (!attempt) return { ok: false, error: "Unlock this round first." };
     if (attempt.submittedAt) {
       return {
@@ -252,9 +253,7 @@ export async function saveAnswer(input: unknown): Promise<SaveAnswerResult> {
       };
     }
 
-    const list = await getRoundQuestions(db, round.id);
-    const question = list.find((q) => q.id === questionId);
-    if (!question)
+    if (!question || question.roundId !== round.id)
       return { ok: false, error: "That question is not part of this round." };
 
     const value = answer.trim();
@@ -266,8 +265,14 @@ export async function saveAnswer(input: unknown): Promise<SaveAnswerResult> {
       return { ok: false, error: "Type an answer of up to 300 characters." };
     }
 
+    // Only the treasure hunt needs the whole list, for clue order.
+    let list: { id: string }[] = [];
     if (round.sequential) {
-      const saved = await getAttemptAnswers(db, attempt.id);
+      let saved;
+      [list, saved] = await Promise.all([
+        getRoundQuestions(db, round.id),
+        getAttemptAnswers(db, attempt.id),
+      ]);
       const byQuestion = new Map(saved.map((a) => [a.questionId, a]));
       if (list[currentClueIndex(list, byQuestion)]?.id !== question.id) {
         return {
@@ -349,13 +354,13 @@ export async function submitRound(input: unknown): Promise<SubmitRoundResult> {
   if (!db) return { ok: false, error: GENERIC_ERROR };
 
   try {
-    const [round] = await db
-      .select({ id: rounds.id })
-      .from(rounds)
-      .where(eq(rounds.number, parsed.data))
-      .limit(1);
-    if (!round) return { ok: false, error: "Unknown round." };
-    const attempt = await getAttempt(db, viewer.participantId, round.id);
+    const row = await getRoundWithAttempt(
+      db,
+      viewer.participantId,
+      parsed.data,
+    );
+    if (!row) return { ok: false, error: "Unknown round." };
+    const { attempt } = row;
     if (!attempt) return { ok: false, error: "Unlock this round first." };
     if (attempt.submittedAt) return { ok: true };
 

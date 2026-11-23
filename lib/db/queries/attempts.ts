@@ -246,6 +246,40 @@ export async function getAttempt(
   return attempt ?? null;
 }
 
+/** A round by number plus this participant's attempt at it, in one query. */
+export async function getRoundWithAttempt(
+  db: Db,
+  participantId: string,
+  roundNumber: number,
+) {
+  const [row] = await db
+    .select({ round: rounds, attempt: roundAttempts })
+    .from(rounds)
+    .leftJoin(
+      roundAttempts,
+      and(
+        eq(roundAttempts.roundId, rounds.id),
+        eq(roundAttempts.participantId, participantId),
+      ),
+    )
+    .where(eq(rounds.number, roundNumber))
+    .limit(1);
+  return row ?? null;
+}
+
+/** One question with its options (answer keys included, server only). */
+export async function getQuestion(db: Db, questionId: string) {
+  const [[question], options] = await Promise.all([
+    db.select().from(questions).where(eq(questions.id, questionId)).limit(1),
+    db
+      .select()
+      .from(questionOptions)
+      .where(eq(questionOptions.questionId, questionId))
+      .orderBy(asc(questionOptions.position)),
+  ]);
+  return question ? { ...question, options } : null;
+}
+
 export async function getAttemptAnswers(db: Db, attemptId: string) {
   return db
     .select()
