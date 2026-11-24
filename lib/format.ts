@@ -17,3 +17,16 @@ export function formatDateTime(
   if (!value) return "-";
   return dateTime.format(typeof value === "string" ? new Date(value) : value);
 }
+
+const time = new Intl.DateTimeFormat("en-IN", {
+  timeZone: EVENT_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+/** "14:05:09" in the event's time zone. */
+export function formatTime(value: Date): string {
+  return time.format(value);
+}

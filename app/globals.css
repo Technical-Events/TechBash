@@ -16,10 +16,21 @@
   --color-current: currentColor;
 
   --animate-blink: blink 1.1s steps(1) infinite;
+  /* Leaderboard top 5: a line typed in from the left. Delay set per row. */
+  --animate-reveal: reveal 0.7s steps(28) both;
 
   @keyframes blink {
     50% {
       opacity: 0;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0);
     }
   }
 }
