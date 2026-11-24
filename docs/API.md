@@ -36,11 +36,11 @@ Reports nothing about the database or environment.
   `no-store`. Cells starting with `= + - @` get a leading apostrophe.
 - `404` unknown kind, `503` no database, `500` on failure (logged).
 
-| Kind           | Columns                                                                                                                                                              |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `results`      | rank, usn, full_name, per round: score, status, started_at, submitted_at; total_score, rounds_submitted, time_taken, time_taken_seconds, finished_at, first_finisher |
-| `participants` | usn, full_name, registered_at, last_login_at                                                                                                                         |
-| `answers`      | usn, full_name, round, question_position, question, answer (option text), correct, points, tries, answered_at                                                        |
+| Kind           | Columns                                                                                                                                                                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `results`      | rank (current round), ranked_round, usn, full_name, per round: score, status, started_at, submitted_at; score, time_taken, time_taken_seconds, submitted_at, first_to_submit (current round). Participants who have not unlocked the current round come last, unranked, with those five blank |
+| `participants` | usn, full_name, registered_at, last_login_at                                                                                                                                                                                                                                                  |
+| `answers`      | usn, full_name, round, question_position, question, answer (option text), correct, points, tries, answered_at                                                                                                                                                                                 |
 
 ## Participant actions (`app/test/actions.ts`)
 

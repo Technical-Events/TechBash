@@ -122,19 +122,22 @@ sequenceDiagram
 ## Results
 
 `getResultsData()` (`lib/db/queries/results.ts`) loads rounds, roster and per-attempt
-scores in four queries, then `rankParticipants()` (`lib/results/ranking.ts`, pure, tested)
-applies the tie-breaks: total score, rounds submitted, total time, final submission time;
-full equality shares the rank. `selectWinners()` takes places 1..N (ties on place N
-included, zero scores excluded). `firstFinisher()` is the earliest participant to submit
-every round. Dashboard, leaderboard, results page and exports all use the same data.
+scores in four queries. Rankings cover the **current round alone** (ADR-021):
+`currentRound()` picks the highest-numbered round that is open or closed, and
+`rankLiveRound()` (`lib/results/ranking.ts`, pure, tested) ranks everyone who unlocked it,
+submitted or not, with `rankParticipants()`'s tie-breaks: score, submitted before in
+progress, time taken, submission time; full equality shares the rank. Earlier rounds do
+not count. `selectWinners()` takes places 1..N (ties on place N included, zero scores
+excluded). `firstFinisher()` is the earliest to submit that round. Dashboard, leaderboard,
+participants, results page and the results export all use this ranking. Qualification
+keeps its own `rankRound()` (submitted attempts of the previous round only).
 
 **Leaderboard** (`/admin/leaderboard`): the page re-renders from the server every 5 seconds
 while its tab is visible (`AutoRefresh`, `router.refresh()`); there is no push channel.
 `LiveLeaderboard` compares each render with the previous one: ranks that changed get a
 `+n` / `-n` move, and a round whose status became `closed` opens `TopFiveDialog`. The
-dialog shows `selectWinners(rankThroughRound(outcomes, n), 5)`: the overall standings
-counting rounds 1 to n only, so replaying it later shows the same list. Only participants
-who unlocked a round are listed; ranks come from the whole roster.
+dialog shows `selectWinners(rankLiveRound(outcomes, n), 5)`: round n alone, so replaying
+it later shows the same list. The table lists everyone who unlocked the current round.
 
 ## Security boundaries
 

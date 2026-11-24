@@ -26,6 +26,9 @@
   order with no right/wrong feedback (not sequential). Its 17 earlier attempts were deleted
   after a backup in `private/`; the top-17 qualifier list was kept.
 
+- **2026-11-24**: rankings (results, winners, dashboard, leaderboard, export) cover the
+  current round alone; earlier rounds no longer count (ADR-021).
+
 ## Next (confirmed)
 
 - **Go live checks**: repeat the end-to-end checks on the deployed site and verify a photo

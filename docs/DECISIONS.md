@@ -246,3 +246,20 @@ when a decision changes.
   (finalize expired attempts plus four queries) every 5 seconds; fine for a few admins.
   Changes appear up to 5 seconds late. The popup opens by itself only in tabs that were
   already open when the round closed.
+
+## ADR-021 — Rank by the current round alone
+
+- **Status**: Accepted (2026-11-24). Replaces the cumulative ranking (sum of every round)
+  described under Results in `ARCHITECTURE.md` and the top 5 basis in ADR-020.
+- **Context**: Only the previous round's top N take the next round, so round 1 scores
+  should not decide round 2's results.
+- **Decision**: Every admin ranking (Results and winners, dashboard, participants,
+  leaderboard and its top 5, results export) ranks the current round alone: the
+  highest-numbered round that is open or closed. A draft round has not started, so after
+  round 1 closes the ranking stays on round 1 until round 2 is opened. Everyone who
+  unlocked that round is ranked, in-progress attempts included; ties: score, submitted
+  before in progress, time taken, submission time. The top 5 popup for round n shows
+  round n alone.
+- **Consequences**: Earlier rounds' scores still show in the per-round columns but do not
+  count. "First finisher" became "first to submit" the current round. The results CSV
+  changed its last columns (see `API.md`). Qualification is unchanged.

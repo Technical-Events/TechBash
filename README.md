@@ -51,18 +51,20 @@ roster, results, winners and site content.
 
 | Section      | What it does                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------- |
-| Dashboard    | Live counts, first finisher, per-round statistics, interactive charts, top five           |
+| Dashboard    | Live counts, first to submit, per-round statistics, interactive charts, top five          |
 | Rounds       | Settings (draft / open / closed, time limit), top N who advance, questions, access keys   |
 | Participants | Add, bulk import, edit, end sessions, reset a round, delete; every answer per participant |
 | Leaderboard  | Live standings (every 5 s), rank moves, top 5 popup with a reveal when a round is closed  |
-| Results      | Full ranking with tie-breaks, winner list, first finisher, CSV exports                    |
+| Results      | Current round's ranking with tie-breaks, winner list, first to submit, CSV exports        |
 | Content      | Event details, technical lead, faculty and student coordinator profiles with photo upload |
 | Messages     | Contact form submissions                                                                  |
 | Admins       | Add admins (name, email, password), set a new password, remove                            |
 
-**Ranking:** higher total score, then more rounds submitted, then less total time, then
-earlier final submission. The **first finisher** is whoever submitted all three rounds
-first.
+**Ranking:** by the **current round alone**, the highest-numbered round that is open or
+closed; earlier rounds do not count. Within it: higher score, then submitted before still in
+progress, then less time taken, then earlier submission. Winners, the dashboard, the
+leaderboard and the results export all follow this. **First to submit** is whoever submitted
+the current round first.
 
 ## Tech stack
 
