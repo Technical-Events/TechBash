@@ -2,9 +2,12 @@
  * Leaderboard ranking and winner selection. Pure functions: the admin
  * results page, the exports and the tests all use them.
  *
- * Tie-break order (documented in docs/ARCHITECTURE.md):
- *   1. Higher total score across all rounds.
- *   2. More rounds submitted.
+ * The admin views rank the current round alone (`currentRound`,
+ * `rankLiveRound`): earlier rounds do not count. `rankParticipants` applies
+ * the tie-break order (documented in docs/ARCHITECTURE.md) to whatever
+ * rounds it is given:
+ *   1. Higher total score.
+ *   2. More rounds submitted (in a single round: submitted beats in progress).
  *   3. Less total time taken (sum over submitted rounds of submission
  *      time minus unlock time).
  *   4. Earlier final submission (the latest submission time).
@@ -147,23 +150,37 @@ export function rankRound(
 }
 
 /**
- * Overall standings counting only rounds 1 to `roundNumber`: the ranking as
- * it stood when that round closed, whatever happened in later rounds. Same
- * tie-breaks as `rankParticipants`.
+ * The round rankings follow: the highest-numbered round that is open or
+ * closed. A draft round has not started. Null before any round starts.
  */
-export function rankThroughRound(
+export function currentRound(
+  rounds: { number: number; status: string }[],
+): number | null {
+  let current: number | null = null;
+  for (const round of rounds) {
+    if (round.status === "draft") continue;
+    if (current === null || round.number > current) current = round.number;
+  }
+  return current;
+}
+
+/**
+ * One round ranked on its own, live: everyone who unlocked it, submitted or
+ * still working. Earlier rounds do not count. On equal scores a submitted
+ * attempt ranks above one in progress, then less time, then earlier
+ * submission.
+ */
+export function rankLiveRound(
   outcomes: ParticipantOutcome[],
   roundNumber: number,
 ): RankedParticipant[] {
-  return rankParticipants(
-    outcomes.map((outcome) => ({
-      ...outcome,
-      rounds: outcome.rounds.filter(
-        (round) => round.roundNumber <= roundNumber,
-      ),
-    })),
-    roundNumber,
-  );
+  const entries = outcomes.flatMap((outcome) => {
+    const rounds = outcome.rounds.filter(
+      (round) => round.roundNumber === roundNumber,
+    );
+    return rounds.length ? [{ ...outcome, rounds }] : [];
+  });
+  return rankParticipants(entries, 1);
 }
 
 /**

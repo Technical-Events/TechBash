@@ -11,7 +11,8 @@ import {
 import {
   type ParticipantOutcome,
   type RankedParticipant,
-  rankParticipants,
+  currentRound,
+  rankLiveRound,
 } from "@/lib/results/ranking";
 import { finalizeExpiredAttempts } from "./attempts";
 
@@ -47,6 +48,9 @@ export type ResultsData = {
   attempts: AttemptRow[];
   /** Per participant, every attempt's score and times (input to the rankings). */
   outcomes: ParticipantOutcome[];
+  /** The round the ranking is for (`currentRound`), or null before any starts. */
+  currentRound: number | null;
+  /** That round alone: everyone who unlocked it. Earlier rounds do not count. */
   ranked: RankedParticipant[];
 };
 
@@ -125,12 +129,14 @@ export async function getResultsData(db: Db): Promise<ResultsData> {
       })),
   }));
 
+  const current = currentRound(roundInfo);
   return {
     rounds: roundInfo,
     participants: participantRows,
     attempts: attemptRows,
     outcomes,
-    ranked: rankParticipants(outcomes, roundInfo.length),
+    currentRound: current,
+    ranked: current === null ? [] : rankLiveRound(outcomes, current),
   };
 }
 

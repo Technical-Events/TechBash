@@ -4,7 +4,8 @@ import {
   firstFinisher,
   rankParticipants,
   rankRound,
-  rankThroughRound,
+  currentRound,
+  rankLiveRound,
   selectQualifiers,
   selectWinners,
   type ParticipantOutcome,
@@ -253,39 +254,74 @@ test("rankRound breaks equal scores by time taken (treasure hunt: fastest wins)"
   );
 });
 
-test("rankThroughRound ignores later rounds and counts finishing up to that round", () => {
-  const outcomes = [
-    // Leads after round 1; a big round 2 must not change that standing.
-    person("A", [
-      [5, 0, 10],
-      [0, 20, null],
+test("currentRound is the highest round that is open or closed", () => {
+  assert.equal(
+    currentRound([
+      { number: 1, status: "draft" },
+      { number: 2, status: "draft" },
     ]),
-    person("B", [
-      [3, 0, 10],
-      [40, 20, 30],
+    null,
+  );
+  assert.equal(
+    currentRound([
+      { number: 1, status: "closed" },
+      { number: 2, status: "draft" },
+      { number: 3, status: "draft" },
     ]),
-    person("C", []),
-  ];
-  const afterOne = rankThroughRound(outcomes, 1);
-  assert.deepEqual(
-    afterOne.map((r) => [r.usn, r.rank, r.totalScore]),
+    1,
+  );
+  assert.equal(
+    currentRound([
+      { number: 1, status: "closed" },
+      { number: 2, status: "open" },
+      { number: 3, status: "draft" },
+    ]),
+    2,
+  );
+  assert.equal(
+    currentRound([
+      { number: 2, status: "closed" },
+      { number: 1, status: "closed" },
+    ]),
+    2,
+  );
+});
+
+test("rankLiveRound ignores earlier rounds and keeps attempts in progress", () => {
+  const ranked = rankLiveRound(
     [
-      ["A", 1, 5],
-      ["B", 2, 3],
-      ["C", 3, 0],
+      // A dominated round 1; only round 2 counts.
+      person("A", [
+        [30, 0, 10],
+        [2, 20, 30],
+      ]),
+      person("B", [
+        [1, 0, 10],
+        [5, 20, 40],
+      ]),
+      // Still working on round 2: ranked, below an equal submitted score.
+      person("C", [
+        [9, 0, 10],
+        [2, 20, null],
+      ]),
+      // Never unlocked round 2: not ranked.
+      person("D", [[40, 0, 5]]),
+    ],
+    2,
+  );
+  assert.deepEqual(
+    ranked.map((r) => [r.usn, r.rank, r.totalScore]),
+    [
+      ["B", 1, 5],
+      ["A", 2, 2],
+      ["C", 3, 2],
     ],
   );
-  assert.equal(afterOne[0].finishedAt?.getTime(), at(10).getTime());
+  assert.equal(ranked[0].rounds.length, 1);
+  assert.equal(ranked[0].finishedAt?.getTime(), at(40).getTime());
+  assert.equal(ranked[2].finishedAt, null);
   assert.deepEqual(
-    rankThroughRound(outcomes, 2).map((r) => [r.usn, r.totalScore]),
-    [
-      ["B", 43],
-      ["A", 5],
-      ["C", 0],
-    ],
-  );
-  assert.deepEqual(
-    selectWinners(afterOne, 5).map((r) => r.usn),
-    ["A", "B"],
+    selectWinners(ranked, 1).map((r) => r.usn),
+    ["B"],
   );
 });
