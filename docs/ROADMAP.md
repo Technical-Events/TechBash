@@ -18,6 +18,10 @@
   coordinator with bundled photos; Home sections renamed to Faculty members and Student
   coordinators.
 
+- **2026-11-24**: admin Leaderboard page: live standings re-read every 5 seconds, rank
+  moves, and the overall top 5 in a popup when a round is closed (replayable). Typecheck,
+  lint, tests and build pass; not yet exercised in a browser against a database.
+
 ## Next (confirmed)
 
 - **Go live checks**: repeat the end-to-end checks on the deployed site and verify a photo

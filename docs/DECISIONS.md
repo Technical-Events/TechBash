@@ -227,3 +227,22 @@ when a decision changes.
 - **Consequences**: Framing, plugins, foreign form targets, foreign scripts and unexpected
   connections are blocked; an injected inline script would still run. The code has no raw
   HTML sinks (`dangerouslySetInnerHTML`), so that stays a second line of defence.
+
+## ADR-020 — Live leaderboard by polling, top 5 in a native dialog
+
+- **Status**: Accepted (2026-11-24)
+- **Context**: Admins want standings that update by themselves and a top 5 reveal when a
+  round ends. Redis, queues and push services are ruled out, and the Neon HTTP driver
+  cannot listen for database notifications.
+- **Decision**: The Leaderboard page re-renders from the server every 5 seconds while its
+  tab is visible (`AutoRefresh`, shared with the participant dashboard). The client
+  compares renders to show rank moves and to open the top 5 when a round's status becomes
+  `closed`; a button replays it. The top 5 is the overall standing over rounds 1 to n
+  (`rankThroughRound`), ties on fifth place included, zero scores excluded. The popup is a
+  native `<dialog>` opened with `showModal()` (focus, Escape and the top layer come from
+  the browser), so no dialog library is added. Its typed-in reveal is the design system's
+  one animation beyond the cursor blink, off under reduced motion.
+- **Consequences**: No dependency. Each open Leaderboard tab costs one results read
+  (finalize expired attempts plus four queries) every 5 seconds; fine for a few admins.
+  Changes appear up to 5 seconds late. The popup opens by itself only in tabs that were
+  already open when the round closed.

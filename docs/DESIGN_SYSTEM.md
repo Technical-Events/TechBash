@@ -109,7 +109,11 @@ Feature components outside `ui/`: `rounds/progress-bar.tsx` (`[###-------] 3/10`
 `rounds/round-badges.tsx` (`[OPEN] [20 MIN] [CLUE BY CLUE]`), `rounds/round-runner.tsx`,
 `people/person-card.tsx` (photo or `[DA]` initials frame), `admin/bar-chart.tsx` (bars of
 `accent` / `amber` / `muted` fill in a `line` border; tabs are `aria-pressed` buttons;
-the readout below is a live region), `admin/attempt-cell.tsx` (`-`, `... 3`, `OK 7*`).
+the readout below is a live region), `admin/attempt-cell.tsx` (`-`, `... 3`, `OK 7*`), `admin/live-leaderboard.tsx` (round
+strip, standings with a `+2` / `-1` / `=` move column: accent up, amber down, with screen
+reader text), `admin/top-five-dialog.tsx` (native modal `<dialog>` holding a `Panel`: figlet
+`TOP 5` banner, places typed in from the lowest up to #1, #1 in accent with a blinking
+cursor; Escape, the backdrop or `[ CLOSE ]` closes it).
 
 Feature components (`components/home`, `components/test`, `components/rounds`,
 `components/admin`, `components/people`, `components/contact`, `components/layout`)
@@ -121,11 +125,12 @@ no code hides behind a sideways scroll.
 
 CSS utilities in `app/globals.css`:
 
-| Utility         | Effect                                                |
-| --------------- | ----------------------------------------------------- |
-| `ascii-corner`  | Positions one `+` glyph on a corner of a bordered box |
-| `ascii-grid`    | Faint dot grid background (hero only)                 |
-| `animate-blink` | Blinking cursor (theme animation token)               |
+| Utility          | Effect                                                          |
+| ---------------- | --------------------------------------------------------------- |
+| `ascii-corner`   | Positions one `+` glyph on a corner of a bordered box           |
+| `ascii-grid`     | Faint dot grid background (hero only)                           |
+| `animate-blink`  | Blinking cursor (theme animation token)                         |
+| `animate-reveal` | Line typed in from the left (`clip-path`, 28 steps); top 5 only |
 
 ## Interaction states
 
@@ -166,8 +171,10 @@ CSS utilities in `app/globals.css`:
 - Form controls have visible `<label>`s. Errors use `aria-invalid` and `aria-describedby`;
   the form-level result uses a live region.
 - Quiz options are native radio inputs, so arrow keys work.
-- Motion is limited to the cursor blink and short color transitions. Under
-  `prefers-reduced-motion: reduce` animations stop and transitions are removed.
+- Motion is limited to the cursor blink, short color transitions and one exception: the
+  leaderboard's top 5 popup types its places in (`animate-reveal`), a moment meant to be
+  watched. Under `prefers-reduced-motion: reduce` animations stop and transitions are
+  removed; the top 5 then shows complete at once.
 
 ## Keeping the identity consistent
 
@@ -176,5 +183,6 @@ CSS utilities in `app/globals.css`:
   styling a `<div>` to look similar.
 - Every bracketed label is uppercase. Every panel has square corners.
 - Use Lucide icons only when a character cannot say it. Keep them 16px and `currentColor`.
-- Do not add gradients, glass effects, drop shadows, rounded cards or decorative animation.
+- Do not add gradients, glass effects, drop shadows, rounded cards or decorative animation
+  (the top 5 reveal is the one recorded exception).
 - Update this file when a token, component or convention changes.

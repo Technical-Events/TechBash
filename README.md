@@ -54,6 +54,7 @@ roster, results, winners and site content.
 | Dashboard    | Live counts, first finisher, per-round statistics, interactive charts, top five           |
 | Rounds       | Settings (draft / open / closed, time limit), top N who advance, questions, access keys   |
 | Participants | Add, bulk import, edit, end sessions, reset a round, delete; every answer per participant |
+| Leaderboard  | Live standings (every 5 s), rank moves, top 5 popup with a reveal when a round is closed  |
 | Results      | Full ranking with tie-breaks, winner list, first finisher, CSV exports                    |
 | Content      | Event details, technical lead, faculty and student coordinator profiles with photo upload |
 | Messages     | Contact form submissions                                                                  |
@@ -192,16 +193,16 @@ docs/             documentation
 
 ## Routes
 
-| Route                  | Access      | Purpose                                                             |
-| ---------------------- | ----------- | ------------------------------------------------------------------- |
-| `/`                    | Public      | Home                                                                |
-| `/contact`             | Public      | Contact Us                                                          |
-| `/test`                | Public      | Participant login and round dashboard                               |
-| `/test/round/[number]` | Participant | Take a round                                                        |
-| `/admin/login`         | Public      | Admin sign-in                                                       |
-| `/admin/...`           | Admin       | Dashboard, rounds, participants, results, content, messages, admins |
-| `/admin/export/[kind]` | Admin       | CSV: `results`, `participants`, `answers`                           |
-| `/api/health`          | Public      | Health check                                                        |
+| Route                  | Access      | Purpose                                                                          |
+| ---------------------- | ----------- | -------------------------------------------------------------------------------- |
+| `/`                    | Public      | Home                                                                             |
+| `/contact`             | Public      | Contact Us                                                                       |
+| `/test`                | Public      | Participant login and round dashboard                                            |
+| `/test/round/[number]` | Participant | Take a round                                                                     |
+| `/admin/login`         | Public      | Admin sign-in                                                                    |
+| `/admin/...`           | Admin       | Dashboard, rounds, participants, leaderboard, results, content, messages, admins |
+| `/admin/export/[kind]` | Admin       | CSV: `results`, `participants`, `answers`                                        |
+| `/api/health`          | Public      | Health check                                                                     |
 
 ## Status
 

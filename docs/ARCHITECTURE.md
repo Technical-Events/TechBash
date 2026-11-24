@@ -38,6 +38,7 @@ app/
   admin/(panel)/page.tsx          /admin dashboard
   admin/(panel)/rounds/...        rounds, questions, keys + actions.ts
   admin/(panel)/participants/...  roster + actions.ts
+  admin/(panel)/leaderboard/      live standings, top 5 popup when a round closes
   admin/(panel)/results/          ranking, winners, exports
   admin/(panel)/content/          event info, people + actions.ts
   admin/(panel)/messages/         contact submissions + actions.ts
@@ -125,7 +126,15 @@ scores in four queries, then `rankParticipants()` (`lib/results/ranking.ts`, pur
 applies the tie-breaks: total score, rounds submitted, total time, final submission time;
 full equality shares the rank. `selectWinners()` takes places 1..N (ties on place N
 included, zero scores excluded). `firstFinisher()` is the earliest participant to submit
-every round. Dashboard, results page and exports all use the same data.
+every round. Dashboard, leaderboard, results page and exports all use the same data.
+
+**Leaderboard** (`/admin/leaderboard`): the page re-renders from the server every 5 seconds
+while its tab is visible (`AutoRefresh`, `router.refresh()`); there is no push channel.
+`LiveLeaderboard` compares each render with the previous one: ranks that changed get a
+`+n` / `-n` move, and a round whose status became `closed` opens `TopFiveDialog`. The
+dialog shows `selectWinners(rankThroughRound(outcomes, n), 5)`: the overall standings
+counting rounds 1 to n only, so replaying it later shows the same list. Only participants
+who unlocked a round are listed; ranks come from the whole roster.
 
 ## Security boundaries
 
@@ -166,12 +175,15 @@ No variable is prefixed `NEXT_PUBLIC_`.
 
 ## Client Components
 
-| Component                             | Why it needs the browser                     |
-| ------------------------------------- | -------------------------------------------- |
-| `components/layout/nav-links.tsx`     | Mobile menu state, active link               |
-| `components/admin/admin-nav.tsx`      | Active admin section                         |
-| `components/admin/bar-chart.tsx`      | Dataset tabs, hover/focus readout            |
-| `components/ui/action-form.tsx`       | `useActionState`, pending, confirm-to-delete |
-| `components/rounds/round-runner.tsx`  | Answers, navigation, autosave, countdown     |
-| `components/contact/contact-form.tsx` | Client validation and result state           |
-| `app/error.tsx`                       | Error boundary                               |
+| Component                               | Why it needs the browser                     |
+| --------------------------------------- | -------------------------------------------- |
+| `components/layout/nav-links.tsx`       | Mobile menu state, active link               |
+| `components/admin/admin-nav.tsx`        | Active admin section                         |
+| `components/admin/bar-chart.tsx`        | Dataset tabs, hover/focus readout            |
+| `components/admin/live-leaderboard.tsx` | Rank moves, round-closed detection           |
+| `components/admin/top-five-dialog.tsx`  | Native `<dialog>` (`showModal`)              |
+| `components/ui/auto-refresh.tsx`        | Timer and visibility for `router.refresh()`  |
+| `components/ui/action-form.tsx`         | `useActionState`, pending, confirm-to-delete |
+| `components/rounds/round-runner.tsx`    | Answers, navigation, autosave, countdown     |
+| `components/contact/contact-form.tsx`   | Client validation and result state           |
+| `app/error.tsx`                         | Error boundary                               |

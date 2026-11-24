@@ -46,7 +46,7 @@ app/                       routes; each route's Server Actions live in its own a
   test/                      participant login, round dashboard; test/round/[number]
   admin/login/               admin sign-in
   admin/(panel)/             admin pages behind requireAdmin(): dashboard, rounds,
-                             participants, results, content, messages, admins
+                             participants, leaderboard, results, content, messages, admins
   admin/export/[kind]/       CSV exports (Route Handler)
   api/health/route.ts        liveness Route Handler
 components/
@@ -89,7 +89,8 @@ request. The admin panel has its own section nav (`components/admin/admin-nav.ts
 - Server Components by default. Add `"use client"` only for state, effects or browser
   APIs, and keep the client part as small as possible.
 - Client Components today: `layout/nav-links.tsx`, `admin/admin-nav.tsx`,
-  `admin/bar-chart.tsx`, `ui/action-form.tsx`, `ui/table-scroller.tsx`, `rounds/round-runner.tsx`,
+  `admin/bar-chart.tsx`, `admin/live-leaderboard.tsx`, `admin/top-five-dialog.tsx`,
+  `ui/action-form.tsx`, `ui/auto-refresh.tsx`, `ui/table-scroller.tsx`, `rounds/round-runner.tsx`,
   `contact/contact-form.tsx`, `app/error.tsx`.
 - Keep pages thin; put sections in `components/<feature>/`.
 - Reuse `components/ui/`. Add a variant to an existing component before creating a new one.
@@ -107,8 +108,8 @@ Follow `docs/DESIGN_SYSTEM.md`. The rules that get broken most often:
 - Buttons read `[ LABEL ]`, badges read `[LABEL]`, headings use a `$` or `#` prefix.
 - Decorative ASCII is `aria-hidden` and has a real text equivalent.
 - Every interactive element keeps a visible focus outline and works with the keyboard.
-- Animation is limited to the cursor blink and color transitions, and both stop under
-  `prefers-reduced-motion`.
+- Animation is limited to the cursor blink, color transitions and the leaderboard's top 5
+  reveal, and all stop under `prefers-reduced-motion`.
 - Check new UI at 320px and 1280px wide. No horizontal page scroll.
 
 ## TypeScript
