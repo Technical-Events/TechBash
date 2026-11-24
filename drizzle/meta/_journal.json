@@ -64,6 +64,13 @@
       "when": 1795453171067,
       "tag": "0008_round2_thirty_clues",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795500975926,
+      "tag": "0009_round2_ten_questions",
+      "breakpoints": true
     }
   ]
 }

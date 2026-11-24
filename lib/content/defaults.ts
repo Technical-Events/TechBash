@@ -99,10 +99,10 @@ export const defaultRounds: RoundSummary[] = [
     number: 2,
     title: "Tech Treasure Hunt",
     description:
-      "Thirty connected tech clues: each answer leads to the next. Solve one to unlock the next. The fastest to solve them all wins.",
+      "Ten connected tech clues: each answer leads to the next. All ten are on one screen; change your answers as often as you like until you submit. Highest score wins; time taken breaks ties.",
     status: "draft",
     durationMinutes: 30,
-    sequential: true,
+    sequential: false,
   },
   {
     number: 3,
