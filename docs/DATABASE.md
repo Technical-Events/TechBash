@@ -139,6 +139,8 @@ Unchanged from the scaffold.
 | `0005_round_content_update.sql`  | **Custom**: round 1 to 30 minutes and an all-branch description; round 2 multiple-choice wording. Each value changes only if it still equals the 0003 seed.                                                           |
 | `0006_event_team_content.sql`    | **Custom**: confirmed event date (Tuesday, 24 November 2026, 9:30 AM) and venue; renames and re-roles the two seeded faculty, adds Mrs. Remul Pinto and student coordinator S. Mohammed Sharwan, with bundled photos. |
 | `0007_organizer_update.sql`      | **Custom**: event organizer changed to the Technical Committee AJIET.                                                                                                                                                 |
+| `0008_round2_thirty_clues.sql`   | **Custom**: round 2 description for thirty connected clues.                                                                                                                                                           |
+| `0009_round2_ten_questions.sql`  | **Custom**: round 2 becomes ten clues on one screen, not sequential (no right/wrong feedback); new description and instructions. Each value changes only if it still equals the 0008 text.                            |
 
 The drop and create were generated in two steps so drizzle-kit would not prompt about
 renaming the old `questions` table.

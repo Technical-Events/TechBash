@@ -36,11 +36,11 @@ roster, results, winners and site content.
   active session per USN.
 - Three rounds, each needing its own access key:
 
-  | Round | Name               | Format                                                                             |
-  | ----- | ------------------ | ---------------------------------------------------------------------------------- |
-  | 1     | Quiz               | 30 questions from every engineering branch, 30 minutes, submit once                |
-  | 2     | Tech Treasure Hunt | 30 connected clues one at a time; check an option, retry until right; fastest wins |
-  | 3     | Bug Hunt           | Code snippets with line numbers; pick or type the answer                           |
+  | Round | Name               | Format                                                                                 |
+  | ----- | ------------------ | -------------------------------------------------------------------------------------- |
+  | 1     | Quiz               | 30 questions from every engineering branch, 30 minutes, submit once                    |
+  | 2     | Tech Treasure Hunt | 10 connected clues on one screen; no right/wrong feedback, change answers until submit |
+  | 3     | Bug Hunt           | Code snippets with line numbers; pick or type the answer                               |
 
 - Optional time limit per round with a countdown; the server submits the round at the
   deadline.

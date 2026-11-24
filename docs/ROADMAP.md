@@ -22,6 +22,10 @@
   moves, and the overall top 5 in a popup when a round is closed (replayable). Typecheck,
   lint, tests and build pass; not yet exercised in a browser against a database.
 
+- **2026-11-24**: round 2 replaced with 10 connected clues on one screen, answered in any
+  order with no right/wrong feedback (not sequential). Its 17 earlier attempts were deleted
+  after a backup in `private/`; the top-17 qualifier list was kept.
+
 ## Next (confirmed)
 
 - **Go live checks**: repeat the end-to-end checks on the deployed site and verify a photo
