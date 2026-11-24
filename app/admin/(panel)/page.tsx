@@ -25,7 +25,10 @@ export default async function AdminDashboardPage() {
 
   const total = data.participants.length;
   const loggedIn = data.participants.filter((p) => p.lastLoginAt).length;
-  const completedAll = data.ranked.filter((r) => r.finishedAt).length;
+  // Rankings cover the current round only (getResultsData).
+  const current = data.currentRound;
+  const roundTag = current === null ? "" : ` R${current}`;
+  const submittedCurrent = data.ranked.filter((r) => r.finishedAt).length;
   const first = firstFinisher(data.ranked);
   const leader = data.ranked[0];
 
@@ -119,19 +122,23 @@ export default async function AdminDashboardPage() {
             value={loggedIn}
             detail={`${percent(loggedIn, total)}% of roster`}
           />
-          <Stat label="Finished all" value={completedAll} tone="accent" />
+          <Stat
+            label={`Submitted${roundTag}`}
+            value={current === null ? "-" : submittedCurrent}
+            tone="accent"
+          />
           <Stat
             label="Rounds open"
             value={data.rounds.filter((r) => r.status === "open").length}
             tone="amber"
           />
           <Stat
-            label="Top score"
+            label={`Top score${roundTag}`}
             value={leader && leader.totalScore > 0 ? leader.totalScore : "-"}
             detail={leader && leader.totalScore > 0 ? leader.usn : undefined}
           />
           <Stat
-            label="First finisher"
+            label={`First to submit${roundTag}`}
             value={first ? first.usn : "-"}
             detail={first ? formatDateTime(first.finishedAt) : "nobody yet"}
             tone="accent"
@@ -214,13 +221,19 @@ export default async function AdminDashboardPage() {
         </section>
 
         <section aria-labelledby="top-heading">
-          <SectionHeading id="top-heading">Leaderboard (top 5)</SectionHeading>
+          <SectionHeading id="top-heading">
+            Leaderboard (top 5{current === null ? "" : `, round ${current}`})
+          </SectionHeading>
           <Table
             caption="Top five participants"
-            head={["Rank", "USN", "Name", "Score", "Rounds", "Time"]}
+            head={["Rank", "USN", "Name", "Score", "Time"]}
           >
             {data.ranked.length === 0 && (
-              <EmptyRow colSpan={6}>No participants yet.</EmptyRow>
+              <EmptyRow colSpan={5}>
+                {current === null
+                  ? "No round has started yet."
+                  : `Nobody has unlocked round ${current} yet.`}
+              </EmptyRow>
             )}
             {data.ranked.slice(0, 5).map((entry) => (
               <tr key={entry.participantId}>
@@ -228,9 +241,6 @@ export default async function AdminDashboardPage() {
                 <td className="whitespace-nowrap">{entry.usn}</td>
                 <td>{entry.fullName}</td>
                 <td className="tabular-nums text-accent">{entry.totalScore}</td>
-                <td className="tabular-nums">
-                  {entry.roundsSubmitted}/{data.rounds.length}
-                </td>
                 <td className="tabular-nums whitespace-nowrap">
                   {formatDuration(entry.timeTakenMs)}
                 </td>

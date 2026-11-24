@@ -55,6 +55,7 @@ export async function GET(
       } else {
         header = [
           "rank",
+          "ranked_round",
           "usn",
           "full_name",
           ...data.rounds.flatMap((r) => [
@@ -63,15 +64,24 @@ export async function GET(
             `round${r.number}_started_at`,
             `round${r.number}_submitted_at`,
           ]),
-          "total_score",
-          "rounds_submitted",
+          "score",
           "time_taken",
           "time_taken_seconds",
-          "finished_at",
-          "first_finisher",
+          "submitted_at",
+          "first_to_submit",
         ];
-        rows = data.ranked.map((entry) => [
-          entry.rank,
+        // Ranked participants (current round only) first, then everyone who
+        // has not unlocked that round, unranked.
+        const rankedIds = new Set(data.ranked.map((e) => e.participantId));
+        const entries = [
+          ...data.ranked,
+          ...data.outcomes
+            .filter((o) => !rankedIds.has(o.participantId))
+            .map((o) => ({ ...o, unranked: true as const })),
+        ];
+        rows = entries.map((entry) => [
+          "unranked" in entry ? "" : entry.rank,
+          data.currentRound,
           entry.usn,
           entry.fullName,
           ...data.rounds.flatMap((round) => {
@@ -90,12 +100,15 @@ export async function GET(
               attempt?.submittedAt,
             ];
           }),
-          entry.totalScore,
-          entry.roundsSubmitted,
-          formatDuration(entry.timeTakenMs),
-          Math.round(entry.timeTakenMs / 1000),
-          entry.finishedAt,
-          first?.participantId === entry.participantId ? "yes" : "",
+          ...("unranked" in entry
+            ? ["", "", "", "", ""]
+            : [
+                entry.totalScore,
+                formatDuration(entry.timeTakenMs),
+                Math.round(entry.timeTakenMs / 1000),
+                entry.finishedAt,
+                first?.participantId === entry.participantId ? "yes" : "",
+              ]),
         ]);
       }
     } else if (kind === "answers") {

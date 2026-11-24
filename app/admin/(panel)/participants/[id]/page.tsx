@@ -84,7 +84,9 @@ export default async function ParticipantPage(
         title={participant.fullName}
       >
         {participant.usn}
-        {ranked ? ` | rank ${ranked.rank} | ${ranked.totalScore} points` : ""}
+        {ranked
+          ? ` | round ${data.currentRound} rank ${ranked.rank} | ${ranked.totalScore} points`
+          : ""}
       </PageHeading>
 
       <div className="space-y-16">

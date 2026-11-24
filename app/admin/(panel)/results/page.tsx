@@ -21,10 +21,10 @@ const exports = [
 ] as const;
 
 const tieBreaks = [
-  "Higher total score across all rounds.",
-  "More rounds submitted.",
-  "Less total time taken (unlock to submission, summed over submitted rounds).",
-  "Earlier final submission.",
+  "Higher score in the current round. Earlier rounds do not count.",
+  "Submitted ranks above still in progress.",
+  "Less time taken (unlock to submission).",
+  "Earlier submission.",
   "Still equal: shared rank.",
 ];
 
@@ -34,12 +34,15 @@ export default async function ResultsPage() {
   const winners = selectWinners(data.ranked, info.winnerCount);
   const first = firstFinisher(data.ranked);
   const stillWorking = data.attempts.filter((a) => !a.submittedAt).length;
+  const current = data.currentRound;
+  const roundLabel = current === null ? "" : ` (round ${current})`;
 
   return (
     <>
       <PageHeading command="./admin --results" title="Results">
-        Scores and ranking computed from the stored answers. Winners update
-        live; the list is final once every round is closed.
+        {current === null
+          ? "No round has started yet."
+          : `Ranked by round ${current} alone, the latest round that is open or closed; earlier rounds do not count. Winners update live and are final once round ${current} is closed.`}
       </PageHeading>
 
       <div className="space-y-16">
@@ -52,7 +55,10 @@ export default async function ResultsPage() {
 
         <div className="grid gap-10 lg:grid-cols-[2fr_1fr] lg:gap-8">
           <Panel title="winners">
-            <h2 className="text-lg">Winner list (top {info.winnerCount})</h2>
+            <h2 className="text-lg">
+              Winner list (top {info.winnerCount}
+              {roundLabel})
+            </h2>
             {winners.length === 0 ? (
               <p className="mt-3 text-sm text-muted">
                 # Nobody has scored yet.
@@ -81,16 +87,14 @@ export default async function ResultsPage() {
               </ol>
             )}
             <p className="mt-5 border-t border-dashed border-line pt-3 text-sm">
-              <span className="text-muted">First finisher: </span>
+              <span className="text-muted">First to submit{roundLabel}: </span>
               {first ? (
                 <>
                   <span className="font-bold">{first.fullName}</span> (
                   {first.usn}) at {formatDateTime(first.finishedAt)}
                 </>
               ) : (
-                <span className="text-muted">
-                  nobody has submitted every round yet
-                </span>
+                <span className="text-muted">nobody has submitted yet</span>
               )}
             </p>
           </Panel>
@@ -138,24 +142,25 @@ export default async function ResultsPage() {
             id="ranking-heading"
             intro="OK = submitted, ... = in progress, * = submitted automatically, - = not unlocked."
           >
-            Full ranking
+            Full ranking{roundLabel}
           </SectionHeading>
           <Table
-            caption="Full ranking"
+            caption={`Full ranking${roundLabel}`}
             head={[
               "Rank",
               "USN",
               "Name",
               ...data.rounds.map((r) => `R${r.number}`),
-              "Total",
-              "Rounds",
+              "Score",
               "Time",
-              "Finished",
+              "Submitted",
             ]}
           >
             {data.ranked.length === 0 && (
-              <EmptyRow colSpan={7 + data.rounds.length}>
-                No participants yet.
+              <EmptyRow colSpan={6 + data.rounds.length}>
+                {current === null
+                  ? "No round has started yet."
+                  : `Nobody has unlocked round ${current} yet.`}
               </EmptyRow>
             )}
             {data.ranked.map((entry) => (
@@ -183,9 +188,6 @@ export default async function ResultsPage() {
                 ))}
                 <td className="font-bold text-accent tabular-nums">
                   {entry.totalScore}
-                </td>
-                <td className="tabular-nums">
-                  {entry.roundsSubmitted}/{data.rounds.length}
                 </td>
                 <td className="whitespace-nowrap tabular-nums">
                   {formatDuration(entry.timeTakenMs)}

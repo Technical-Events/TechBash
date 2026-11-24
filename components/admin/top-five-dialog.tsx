@@ -24,7 +24,7 @@ const STEP = 0.9;
 const SUSPENSE = 0.8;
 
 /**
- * Modal with the overall top 5 after a round closed. Places are typed in
+ * Modal with the top 5 of a round that closed, that round alone. Places are typed in
  * from the lowest up to first place; under reduced motion all show at once.
  * Opens as soon as it mounts; remount it (new `key`) to play it again.
  */
@@ -70,12 +70,10 @@ export function TopFiveDialog({
           {banner}
         </pre>
         <h2 id={headingId} className="mt-5 text-lg sm:text-xl">
-          Top 5 after round {roundNumber}
+          Top 5 of round {roundNumber}
         </h2>
         <p className="mt-1 text-sm text-muted">
-          # Overall standings over{" "}
-          {roundNumber === 1 ? "round 1" : `rounds 1 to ${roundNumber}`}.{" "}
-          {roundTitle} is closed.
+          # {roundTitle}: this round alone, earlier rounds do not count.
         </p>
 
         {entries.length === 0 ? (

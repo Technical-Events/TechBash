@@ -14,7 +14,7 @@ import type { RankedParticipant } from "@/lib/results/ranking";
 
 export type Podium = {
   roundNumber: number;
-  /** Overall top 5 counting rounds 1 to `roundNumber` (rankThroughRound). */
+  /** Top 5 of that round alone (rankLiveRound); earlier rounds do not count. */
   entries: RankedParticipant[];
 };
 
@@ -43,13 +43,16 @@ function Move({ places }: { places: number | undefined }) {
  * moves and to open the top 5 when a round changes to closed.
  */
 export function LiveLeaderboard({
+  currentRound,
   rounds,
   ranked,
   attempts,
   podiums,
 }: {
+  /** The round being ranked, or null before any round starts. */
+  currentRound: number | null;
   rounds: RoundInfo[];
-  /** Participants who unlocked at least one round, in rank order. */
+  /** Everyone who unlocked the current round, in rank order. */
   ranked: RankedParticipant[];
   attempts: AttemptRow[];
   /** One per closed round. */
@@ -141,9 +144,9 @@ export function LiveLeaderboard({
       <section aria-labelledby="standings-heading">
         <SectionHeading
           id="standings-heading"
-          intro="OK = submitted, ... = in progress with its score so far, * = submitted automatically, - = not unlocked. Move: places gained or lost at the last change."
+          intro="Ranked by the current round alone. OK = submitted, ... = in progress with its score so far, * = submitted automatically, - = not unlocked. Move: places gained or lost at the last change."
         >
-          Standings
+          Standings{currentRound === null ? "" : ` (round ${currentRound})`}
         </SectionHeading>
         <Table
           caption="Live standings"
@@ -153,14 +156,15 @@ export function LiveLeaderboard({
             "USN",
             "Name",
             ...rounds.map((r) => `R${r.number}`),
-            "Total",
-            "Rounds",
+            "Score",
             "Time",
           ]}
         >
           {ranked.length === 0 && (
-            <EmptyRow colSpan={7 + rounds.length}>
-              Nobody has unlocked a round yet.
+            <EmptyRow colSpan={6 + rounds.length}>
+              {currentRound === null
+                ? "No round has started yet."
+                : `Nobody has unlocked round ${currentRound} yet.`}
             </EmptyRow>
           )}
           {ranked.map((entry) => (
@@ -189,9 +193,6 @@ export function LiveLeaderboard({
               ))}
               <td className="font-bold text-accent tabular-nums">
                 {entry.totalScore}
-              </td>
-              <td className="tabular-nums">
-                {entry.roundsSubmitted}/{rounds.length}
               </td>
               <td className="whitespace-nowrap tabular-nums">
                 {formatDuration(entry.timeTakenMs)}

@@ -126,13 +126,14 @@ export default async function ParticipantsPage(
               "Name",
               "Last login",
               ...data.rounds.map((r) => `R${r.number}`),
-              "Total",
-              "Rank",
+              data.currentRound === null
+                ? "Rank"
+                : `Rank (R${data.currentRound})`,
               "",
             ]}
           >
             {rows.length === 0 && (
-              <EmptyRow colSpan={6 + data.rounds.length}>
+              <EmptyRow colSpan={5 + data.rounds.length}>
                 {q ? "No match." : "No participants yet."}
               </EmptyRow>
             )}
@@ -159,9 +160,8 @@ export default async function ParticipantsPage(
                     </td>
                   ))}
                   <td className="tabular-nums font-bold">
-                    {ranked?.totalScore ?? 0}
+                    {ranked?.rank ?? "-"}
                   </td>
-                  <td className="tabular-nums">{ranked?.rank ?? "-"}</td>
                   <td>
                     <ButtonLink
                       href={`/admin/participants/${p.id}`}

@@ -9,7 +9,7 @@ import { Stat } from "@/components/ui/stat";
 import { requireAdminDb } from "@/lib/auth/session";
 import { getResultsData } from "@/lib/db/queries/results";
 import { formatTime } from "@/lib/format";
-import { rankThroughRound, selectWinners } from "@/lib/results/ranking";
+import { rankLiveRound, selectWinners } from "@/lib/results/ranking";
 
 export const metadata: Metadata = { title: "Leaderboard" };
 
@@ -22,14 +22,14 @@ export default async function LeaderboardPage() {
   const data = await getResultsData(db);
   const updatedAt = new Date();
 
-  // Ranks come from the whole roster; only those who started are listed.
-  const ranked = data.ranked.filter((entry) => entry.rounds.length > 0);
+  // The current round alone: everyone who unlocked it (getResultsData).
+  const { ranked, currentRound: current } = data;
   const podiums: Podium[] = data.rounds
     .filter((round) => round.status === "closed")
     .map((round) => ({
       roundNumber: round.number,
       entries: selectWinners(
-        rankThroughRound(data.outcomes, round.number),
+        rankLiveRound(data.outcomes, round.number),
         PODIUM_PLACES,
       ),
     }));
@@ -40,14 +40,17 @@ export default async function LeaderboardPage() {
     <>
       <AutoRefresh seconds={REFRESH_SECONDS} />
       <PageHeading command="./admin --leaderboard" title="Leaderboard">
-        Overall standings, re-read every {REFRESH_SECONDS} seconds while this
-        tab is visible. Scores of rounds in progress are provisional.
+        {current === null
+          ? "No round has started yet. "
+          : `Round ${current} standings: only that round counts, earlier rounds do not. `}
+        Re-read every {REFRESH_SECONDS} seconds while this tab is visible;
+        scores of attempts in progress are provisional.
       </PageHeading>
 
       <div className="space-y-16">
         <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
           <Stat
-            label="Started"
+            label={current === null ? "Started" : `Started R${current}`}
             value={ranked.length}
             detail={`of ${data.participants.length} registered`}
           />
@@ -70,6 +73,7 @@ export default async function LeaderboardPage() {
         </dl>
 
         <LiveLeaderboard
+          currentRound={current}
           rounds={data.rounds}
           ranked={ranked}
           attempts={data.attempts}
