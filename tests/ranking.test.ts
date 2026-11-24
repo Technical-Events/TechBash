@@ -4,6 +4,7 @@ import {
   firstFinisher,
   rankParticipants,
   rankRound,
+  rankThroughRound,
   selectQualifiers,
   selectWinners,
   type ParticipantOutcome,
@@ -249,5 +250,42 @@ test("rankRound breaks equal scores by time taken (treasure hunt: fastest wins)"
       ["FAST", 1],
       ["SLOW", 2],
     ],
+  );
+});
+
+test("rankThroughRound ignores later rounds and counts finishing up to that round", () => {
+  const outcomes = [
+    // Leads after round 1; a big round 2 must not change that standing.
+    person("A", [
+      [5, 0, 10],
+      [0, 20, null],
+    ]),
+    person("B", [
+      [3, 0, 10],
+      [40, 20, 30],
+    ]),
+    person("C", []),
+  ];
+  const afterOne = rankThroughRound(outcomes, 1);
+  assert.deepEqual(
+    afterOne.map((r) => [r.usn, r.rank, r.totalScore]),
+    [
+      ["A", 1, 5],
+      ["B", 2, 3],
+      ["C", 3, 0],
+    ],
+  );
+  assert.equal(afterOne[0].finishedAt?.getTime(), at(10).getTime());
+  assert.deepEqual(
+    rankThroughRound(outcomes, 2).map((r) => [r.usn, r.totalScore]),
+    [
+      ["B", 43],
+      ["A", 5],
+      ["C", 0],
+    ],
+  );
+  assert.deepEqual(
+    selectWinners(afterOne, 5).map((r) => r.usn),
+    ["A", "B"],
   );
 });

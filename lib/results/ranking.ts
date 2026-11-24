@@ -147,6 +147,26 @@ export function rankRound(
 }
 
 /**
+ * Overall standings counting only rounds 1 to `roundNumber`: the ranking as
+ * it stood when that round closed, whatever happened in later rounds. Same
+ * tie-breaks as `rankParticipants`.
+ */
+export function rankThroughRound(
+  outcomes: ParticipantOutcome[],
+  roundNumber: number,
+): RankedParticipant[] {
+  return rankParticipants(
+    outcomes.map((outcome) => ({
+      ...outcome,
+      rounds: outcome.rounds.filter(
+        (round) => round.roundNumber <= roundNumber,
+      ),
+    })),
+    roundNumber,
+  );
+}
+
+/**
  * The top `count` places of a ranking. A tie on the last place includes
  * everyone sharing it, so the result can be longer than `count`.
  */
